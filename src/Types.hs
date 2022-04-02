@@ -28,6 +28,7 @@ defaultControls = Controls False
 
 data Resources = Resources
   { r_engine :: Engine
+  , r_font :: Char -> Maybe Texture
   }
 
 

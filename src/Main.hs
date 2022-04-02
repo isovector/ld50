@@ -4,18 +4,23 @@
 
 module Main where
 
-import Control.Monad
-import Data.IORef
-import Data.Time.Clock.System
-import FRP.Yampa
-import SDL hiding (copy, Stereo)
-import System.Exit
-import Foreign.C (CFloat)
-import Overlude
-import Game (game)
+import           Control.Monad
+import           Data.IORef
+import qualified Data.Map as M
+import           Data.Time.Clock.System
+import           Data.Traversable
+import           FRP.Yampa
+import           Foreign.C (CFloat)
+import           Game (game)
+import           Overlude
+import           SDL hiding (copy, Stereo)
+import qualified SDL.Image as Image
+import           System.Exit
+
 
 screenScale :: V2 CFloat
-screenScale = V2 4 4
+screenScale = V2 2 2
+
 
 main :: IO ()
 main = do
@@ -34,9 +39,7 @@ main = do
   let engine = Engine
         { e_renderer = renderer
         }
-      rs = Resources
-        { r_engine = engine
-        }
+  rs <- loadResources engine
 
   tS <- getSystemTime
   let seconds = floatSeconds tS
@@ -48,6 +51,29 @@ main = do
     (output rs)
     game
   quit
+
+
+pad :: Int -> Char -> String -> String
+pad n c s =
+  let len = length s
+   in case len >= n of
+        True -> s
+        False -> replicate (n - len) c <> s
+
+
+loadResources :: Engine -> IO Resources
+loadResources e = do
+  let renderer = e_renderer e
+  glyphs <-
+    fmap M.fromList $ for [32 .. 122] $ \code -> do
+      let fp = "resources/font/font-" <> pad 3 '0' (show code) <> ".png"
+      texture <- Image.loadTexture renderer fp
+      pure (toEnum @Char code, texture)
+
+  pure $ Resources
+    { r_engine = e
+    , r_font = flip M.lookup glyphs
+    }
 
 
 input :: IORef Double -> Bool -> IO (DTime, Maybe Controls)

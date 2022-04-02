@@ -1,12 +1,19 @@
+{-# LANGUAGE ViewPatterns #-}
 module Overlude
   ( module Overlude
   , module Types
+  , module Data.Point2
+  , T.Text
   ) where
 
-import Controls
-import Types
-import Control.Monad.Reader
-import Control.Monad.Cont
+import           Control.Monad.Cont
+import           Control.Monad.Reader
+import           Controls
+import           Data.Foldable (for_)
+import           Data.Point2
+import qualified Data.Text as T
+import           SDL hiding (Event)
+import           Types
 
 
 compEmbed :: Embedding a' b' d e -> Embedding a b a' b' -> Embedding a b d e
@@ -44,4 +51,15 @@ swont = Swont . cont . switch
 
 always :: Arrow p => o -> p i o
 always = arr . const
+
+
+drawText :: String -> Point2 Double -> Resources -> IO ()
+drawText text (Point2 (round -> x) (round -> y)) rs = do
+  let renderer = e_renderer $ r_engine rs
+  for_ (zip text [0..]) $ \(c, i) -> do
+    let glyph = maybe (error "missing glyph") id $ r_font rs c
+    copy renderer glyph Nothing
+      $ Just
+      $ Rectangle (P $ V2 (x + i * 8) y)
+      $ V2 8 8
 
