@@ -75,16 +75,18 @@ always :: Arrow p => o -> p i o
 always = arr . const
 
 
-drawText :: String -> Point2 Double -> Resources -> IO ()
-drawText text (Point2 (round -> x) (round -> y)) rs = do
+drawText :: CInt -> V3 Word8 -> String -> Point2 Double -> Resources -> IO ()
+drawText sz color text (Point2 (round -> x) (round -> y)) rs = do
   let renderer = e_renderer $ r_engine rs
   for_ (zip text [0..]) $ \(c, i) -> do
     let glyph = maybe (error $ "missing glyph " <> show c) id
               $ r_font rs c
+    textureColorMod glyph $= color
     copy renderer glyph Nothing
       $ Just
-      $ Rectangle (P $ V2 (x + i * 8) y)
-      $ V2 8 8
+      $ Rectangle (P $ V2 (x + i * sz) y)
+      $ V2 sz sz
+  rendererDrawBlendMode renderer $= BlendAlphaBlend
 
 
 timedSequence :: Double -> [SF i o] -> SF i o

@@ -26,13 +26,21 @@ charpos f = loopPre (V2 0 40) $ proc (FrameInfo controls dt, pos) -> do
           True -> pos'
           False -> pos
 
+blue :: V3 Word8
+blue = V3 0 0 255
+
+white :: V3 Word8
+white = V3 255 255 255
+
+black :: V3 Word8
+black = V3 0 0 0
 
 game :: Resources -> SF FrameInfo Renderable
 game rs
   = flip runSwont (const $ field rs)
   $ flip runReaderT (Embedding id) $ do
-      composite (*>. drawText "overlay" (Point2 10 10)) $
-        composite (drawText "underlay" (Point2 10 80) *>.) $
+      composite (*>. drawText 4 blue "overlay" (Point2 10 10)) $
+        composite (drawText 12 black "underlay" (Point2 10 80) *>.) $
           stdWaitFor (== Restart) (field rs)
       gameDfa
 
@@ -101,6 +109,6 @@ gameDfa = do
   over 1.9 $ time >>> arr (\t -> bgColor $ V4 (round $ 255 * (1 - t / 2)) 0 0 255)
   stdWait $ \rs -> do
     bgColor (V4 50 0 50 255) rs
-    drawText "-INTO DARKNESS-" (Point2 20 20) rs
-    drawText "by Sandy Maguire" (Point2 15 120) rs
+    drawText 8 white "-INTO DARKNESS-" (Point2 20 20) rs
+    drawText 8 white "by Sandy Maguire" (Point2 15 120) rs
 
