@@ -61,7 +61,7 @@ halfScreen = screen * 0.5
 asPerCamera :: V2 Double -> V2 Double -> V2 Double
 asPerCamera cam@(V2 camx camy) pos =
   pos - cam + V2 (clamp (0, getX halfScreen + 40) camx)
-                 (clamp (0, getY halfScreen)      camy)
+                 (clamp (0, getY halfScreen + 4)  camy)
 
 field :: Resources -> SF FrameInfo Renderable
 field rs = proc fi@(FrameInfo controls _) -> do
@@ -118,7 +118,7 @@ drawDarkness x rs = do
     renderer
     (getTexture darkness)
     Nothing
-    (Just $ Rectangle (P $ V2 (fromIntegral x - 60) 0) $ fmap round $ screen * V2 0.5 1)
+    (Just $ Rectangle (P $ V2 (fromIntegral x - 64) 0) $ fmap round $ screen * V2 0.5 1)
   rendererDrawColor renderer $= V4 0 0 0 255
   fillRect renderer
     $ Just $ Rectangle (P $ V2 (fromIntegral x + 10) 0) (V2 1000 1000)
