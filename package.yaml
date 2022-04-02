@@ -1,0 +1,44 @@
+name:                ld50
+version:             0.1.0.0
+github:              "isovector/ld50"
+license:             BSD3
+author:              "Sandy Maguire"
+maintainer:          "sandy@sandymaguire.me"
+copyright:           "Sandy Maguire"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/isovector/ld50#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- containers
+- filepath
+- mtl
+- transformers
+- random
+- sdl2
+- sdl2-image
+- sdl2-mixer
+- text
+- time
+- Yampa
+- simple-affine-space
+
+executables:
+  ld50-exe:
+    main:                Main.hs
+    source-dirs:         src
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
