@@ -91,7 +91,7 @@ field rs = proc fi@(FrameInfo controls _) -> do
     let martha_pos = asPerCamera cam $ V2 80 80
     drawText 4 white "help!" (martha_pos - V2 0 30) rs
     drawSprite martha (martha_pos) 0 (V2 True False) rs'
-    drawDarkness (round $ getX (asPerCamera cam pos) + 4) rs'
+    drawDarkness (round $ getX (asPerCamera cam pos)) rs'
 
 
 drawDarkness :: Int -> Renderable
