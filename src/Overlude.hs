@@ -57,7 +57,8 @@ drawText :: String -> Point2 Double -> Resources -> IO ()
 drawText text (Point2 (round -> x) (round -> y)) rs = do
   let renderer = e_renderer $ r_engine rs
   for_ (zip text [0..]) $ \(c, i) -> do
-    let glyph = maybe (error "missing glyph") id $ r_font rs c
+    let glyph = maybe (error $ "missing glyph " <> show c) id
+              $ r_font rs c
     copy renderer glyph Nothing
       $ Just
       $ Rectangle (P $ V2 (x + i * 8) y)
