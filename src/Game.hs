@@ -39,8 +39,8 @@ game :: Resources -> SF FrameInfo Renderable
 game rs
   = flip runSwont (const $ field rs)
   $ flip runReaderT (Embedding id) $ do
-      composite (*>. drawText 4 blue "overlay" (Point2 10 10)) $
-        composite (drawText 12 black "underlay" (Point2 10 80) *>.) $
+      composite (*>. drawText 4 blue "overlay" (V2 10 10)) $
+        composite (drawText 12 black "underlay" (V2 10 80) *>.) $
           stdWaitFor (== Restart) (field rs)
       gameDfa
 
@@ -87,7 +87,10 @@ field rs = proc fi@(FrameInfo controls _) -> do
     let stretch = bool 0 (V2 5 0) $ getX (c_arrows controls) < 0
     drawSpriteStretched mc (asPerCamera cam pos) 0 (pure False) stretch rs'
     drawSprite clap (asPerCamera cam $ V2 60 40) 0 (pure True) rs'
-    drawSprite martha (asPerCamera cam $ V2 80 80) 0 (V2 True False) rs'
+
+    let martha_pos = asPerCamera cam $ V2 80 80
+    drawText 4 white "help!" (martha_pos - V2 0 30) rs
+    drawSprite martha (martha_pos) 0 (V2 True False) rs'
     drawDarkness (round $ getX (asPerCamera cam pos) + 4) rs'
 
 
@@ -109,6 +112,6 @@ gameDfa = do
   over 1.9 $ time >>> arr (\t -> bgColor $ V4 (round $ 255 * (1 - t / 2)) 0 0 255)
   stdWait $ \rs -> do
     bgColor (V4 50 0 50 255) rs
-    drawText 8 white "-INTO DARKNESS-" (Point2 20 20) rs
-    drawText 8 white "by Sandy Maguire" (Point2 15 120) rs
+    drawText 8 white "-INTO DARKNESS-" (V2 20 20) rs
+    drawText 8 white "by Sandy Maguire" (V2 15 120) rs
 
