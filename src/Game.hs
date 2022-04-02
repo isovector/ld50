@@ -23,9 +23,12 @@ charpos = loopPre (V2 0 0) $ proc (FrameInfo controls dt, pos) -> do
 
 game :: Resources -> SF FrameInfo Renderable
 game rs
-  = runSwont (runReaderT (stdWaitFor (== Restart) (field rs) >> gameDfa) (Embedding id)) . const
-  $ field rs
-
+  = flip runSwont (const $ field rs)
+  $ flip runReaderT (Embedding id) $ do
+      composite (*>. drawText "overlay" (Point2 10 10)) $
+        composite (drawText "underlay" (Point2 10 80) *>.) $
+          stdWaitFor (== Restart) (field rs)
+      gameDfa
 
 field :: Resources -> SF FrameInfo Renderable
 field rs = proc fi@(FrameInfo controls _) -> do

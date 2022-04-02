@@ -1,11 +1,15 @@
 {-# LANGUAGE ViewPatterns #-}
+
 module Overlude
   ( module Overlude
+  , module Control.Monad
   , module Types
   , module Data.Point2
   , T.Text
   ) where
 
+import           Control.Applicative (liftA2)
+import           Control.Monad
 import           Control.Monad.Cont
 import           Control.Monad.Reader
 import           Controls
@@ -37,7 +41,6 @@ over :: Time -> SF a b -> ReaderT (Embedding a b d e) (Swont d e) ()
 over interval sf = do
   Embedding embed' <- ask
   lift . swont $ embed' $ sf &&& (after interval () >>> iPre NoEvent)
-
 
 stdWaitFor :: (Message -> Bool) -> SF FrameInfo b -> ReaderT (Embedding FrameInfo b i o) (Swont i o) ()
 stdWaitFor b sf = do
@@ -106,4 +109,13 @@ drawSprite wt pos theta flips rs = do
     Nothing
     flips
 
+
+composite
+    :: (d -> d)
+    -> ReaderT (Embedding a b c d) (Swont i o) x
+    -> ReaderT (Embedding a b c d) (Swont i o) x
+composite f m = local (compEmbed $ embedArr f) m
+
+(*>.) :: Applicative m => (a -> m b) -> (a -> m c) -> a -> m c
+(*>.) = liftA2 (*>)
 
