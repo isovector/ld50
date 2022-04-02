@@ -79,7 +79,7 @@ timedSequence interval sfs =
     traverse_ (dswont . (&&& after interval ())) sfs
 
 
-playAnimation :: Character -> Anim -> Resources -> SF Time WrappedTexture
+playAnimation :: CharName -> Anim -> Resources -> SF Time WrappedTexture
 playAnimation c a rs = timedSequence 0.1 $ cycle $ fmap always $ r_sprites rs c a
 
 

@@ -20,13 +20,14 @@ data Engine = Engine
 
 data Controls = Controls
   { c_action :: Bool
+  , c_arrows :: V2 Int
   }
 
 
 defaultControls :: Controls
-defaultControls = Controls False
+defaultControls = Controls False $ pure 0
 
-data Character
+data CharName
   = MainCharacter
   | Martha
   | Claptrap
@@ -43,7 +44,7 @@ data Anim
 data Resources = Resources
   { r_engine :: Engine
   , r_font :: Char -> Maybe Texture
-  , r_sprites :: Character -> Anim -> [WrappedTexture]
+  , r_sprites :: CharName -> Anim -> [WrappedTexture]
   }
 
 

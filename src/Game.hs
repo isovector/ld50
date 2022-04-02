@@ -30,7 +30,12 @@ game rs = runSwont (runReaderT gameDfa (Embedding id)) $ const $
 
     returnA -< \rs' -> do
       bg rs
-      drawSprite mc (V2 40 80) 0 (pure False) rs'
+      drawSprite
+        mc
+        (V2 40 80 + (fmap ((* 10) . fromIntegral @_ @Float) $ c_arrows controls))
+        0
+        (pure False)
+        rs'
       drawSprite clap (V2 60 40) 0 (pure True) rs'
       drawSprite martha (V2 80 80) 0 (V2 True False) rs'
   -- ((arr $ \c -> do

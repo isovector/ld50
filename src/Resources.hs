@@ -26,13 +26,13 @@ wrapTexture t = do
     }
 
 
-frameCounts :: Character -> Anim -> Int
+frameCounts :: CharName -> Anim -> Int
 frameCounts _ Idle   = 4
 frameCounts _ NoAnim = 1
 frameCounts _ Run    = 4
 
 
-charName :: Character -> String
+charName :: CharName -> String
 charName MainCharacter = "mc"
 charName Martha        = "martha"
 charName Claptrap      = "claptrap"
@@ -44,7 +44,7 @@ animName NoAnim = "no_anim"
 animName Run    = "run"
 
 
-framePath :: Character -> Anim -> Int -> FilePath
+framePath :: CharName -> Anim -> Int -> FilePath
 framePath c a i =
   "resources/sprites/" <> charName c <> "/" <> animName a <> "_" <> show i <> ".png"
 
@@ -59,7 +59,7 @@ loadResources e = do
       pure (toEnum @Char code, texture)
 
   chars <- fmap (M.fromList . join) $
-    for [minBound @Character .. maxBound] $ \char ->
+    for [minBound @CharName .. maxBound] $ \char ->
       for [minBound @Anim .. maxBound] $ \anim ->  do
         frames <- for [0 .. frameCounts char anim - 1] $ \i -> do
           let fp = framePath char anim i

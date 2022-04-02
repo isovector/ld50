@@ -14,6 +14,7 @@ import Overlude
 import Resources (loadResources)
 import SDL hiding (copy, Stereo)
 import System.Exit
+import Controls (parseControls)
 
 
 screenScale :: V2 CFloat
@@ -65,7 +66,7 @@ input tRef _ = do
   keys <- getKeyboardState
 
   let dt = min 0.016 (seconds' - seconds)
-  pure (realToFrac dt, Just $ Controls $ keys ScancodeZ)
+  pure (realToFrac dt, Just $ parseControls keys)
 
 
 isQuit :: EventPayload -> Bool
