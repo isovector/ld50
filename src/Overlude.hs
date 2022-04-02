@@ -3,6 +3,7 @@ module Overlude
   , module Types
   ) where
 
+import Controls
 import Types
 import Control.Monad.Reader
 import Control.Monad.Cont
@@ -28,6 +29,14 @@ over :: Time -> SF a b -> ReaderT (Embedding a b d e) (Swont d e) ()
 over interval sf = do
   Embedding embed' <- ask
   lift . swont $ embed' $ sf &&& (after interval () >>> iPre NoEvent)
+
+stdWait :: b -> ReaderT (Embedding Controls b i o) (Swont i o) ()
+stdWait sf = do
+  Embedding embed' <- ask
+  lift . swont $ embed' $ wait sf
+
+wait :: c -> SF Controls (c, Event ())
+wait sf = constant sf &&& (waitControls >>> arr (not . null) >>> edge)
 
 
 swont :: SF a (b, Event c) -> Swont a b c

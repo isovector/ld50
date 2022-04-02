@@ -3,7 +3,7 @@
 module Game where
 
 import Overlude
-import SDL
+import SDL hiding (time)
 import Control.Monad.Reader
 
 
@@ -22,9 +22,9 @@ game = runSwont (runReaderT gameDfa (Embedding id)) $ const $
       False -> mempty
 
 
-gameDfa :: ReaderT (Embedding a Renderable Controls Renderable) (Swont Controls Renderable) ()
+gameDfa :: ReaderT (Embedding Controls Renderable Controls Renderable) (Swont Controls Renderable) ()
 gameDfa = do
-  over 0.5 $ always $ bgColor $ V4 255 0 0 255
-  over 0.5 $ always $ bgColor $ V4 0 255 0 255
+  over 1 $ time >>> arr (\t -> bgColor $ V4 (round $ 255 * t) 0 0 255)
+  stdWait $ bgColor $ V4 0 255 0 255
   over 0.5 $ always $ bgColor $ V4 0 0 255 255
 

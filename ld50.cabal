@@ -26,6 +26,7 @@ source-repository head
 executable ld50-exe
   main-is: Main.hs
   other-modules:
+      Controls
       Game
       Lib
       Overlude
