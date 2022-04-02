@@ -6,6 +6,7 @@ module Game where
 import Overlude hiding (now)
 import SDL hiding (time)
 import Control.Monad.Reader
+import Data.Foldable (for_)
 
 
 bgColor :: V4 Word8 -> Renderable
@@ -45,6 +46,13 @@ field rs = proc fi@(FrameInfo controls _) -> do
 
   returnA -< \rs' -> do
     bg rs
+    let field = f_data $ r_fields rs TestField
+    for_ [0 .. 16] $ \y ->
+      for_ [0 .. 16] $ \x ->
+        case field x y of
+          Just wt ->
+            drawSprite wt (fmap fromIntegral $ V2 x y * 16) 0 (pure False) rs'
+          Nothing -> pure ()
     drawSprite mc pos 0 (pure False) rs'
     drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
     drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'

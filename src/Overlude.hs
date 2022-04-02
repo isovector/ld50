@@ -103,7 +103,7 @@ drawSprite wt pos theta flips rs = do
   copyEx
     renderer
     (getTexture wt)
-    Nothing
+    (wt_sourceRect wt)
     (Just $ Rectangle (P $ fmap round pos) $ wt_size wt)
     (CDouble theta)
     Nothing

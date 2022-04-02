@@ -41,11 +41,20 @@ data Anim
   | Run
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+data FieldName
+  = TestField
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
 
 data Resources = Resources
   { r_engine :: Engine
   , r_font :: Char -> Maybe Texture
   , r_sprites :: CharName -> Anim -> [WrappedTexture]
+  , r_fields :: FieldName -> Field
+  }
+
+data Field = Field
+  { f_data :: Int -> Int -> Maybe WrappedTexture
   }
 
 data FrameInfo = FrameInfo
@@ -58,6 +67,7 @@ type Renderable = Resources -> IO ()
 
 data WrappedTexture = WrappedTexture
   { getTexture :: Texture
+  , wt_sourceRect :: Maybe (Rectangle CInt)
   , wt_size    :: V2 CInt
   }
 

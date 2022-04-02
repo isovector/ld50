@@ -33,6 +33,9 @@ dependencies:
 - time
 - Yampa
 - simple-affine-space
+- aeson-tiled
+- vector
+- filepath
 
 ghc-options:
 - -Wall
