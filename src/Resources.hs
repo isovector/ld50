@@ -13,7 +13,7 @@ import           GHC.Stack (HasCallStack)
 import           Overlude
 import           SDL
 import qualified SDL.Image as Image
-import           System.FilePath (dropFileName)
+import           System.FilePath (dropFileName, (<.>), (</>))
 
 
 pad :: Int -> Char -> String -> String
@@ -61,6 +61,12 @@ animName Run    = "run"
 
 fieldName :: FieldName -> String
 fieldName TestField = "test"
+
+textureName :: GameTexture -> String
+textureName Darkness = "darkness"
+
+texturePath :: GameTexture -> String
+texturePath t = "./resources/textures" </> textureName t <.> "png"
 
 
 framePath :: CharName -> Anim -> Int -> FilePath
@@ -157,6 +163,11 @@ loadResources e = do
          Left s -> error s
          Right tm -> fmap (fn, ) $ parseTilemap e fn tm
 
+  textures <- fmap M.fromList $
+    for [minBound @GameTexture .. maxBound] $ \tx-> do
+      let fp = texturePath tx
+      fmap (tx, ) $ wrapTexture =<< Image.loadTexture renderer fp
+
 
   pure $ Resources
     { r_engine = e
@@ -164,6 +175,8 @@ loadResources e = do
     , r_sprites = curry $ fromMaybe [] . flip M.lookup chars
     , r_fields = fromMaybe (error "missing field data")
                . flip M.lookup fields
+    , r_textures = fromMaybe (error "missing texture")
+                 . flip M.lookup textures
     }
 
 

@@ -66,6 +66,22 @@ field rs = proc fi@(FrameInfo controls _) -> do
     drawSprite mc pos 0 (pure False) rs'
     drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
     drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'
+    drawDarkness (round $ getX pos + 4) rs'
+
+getX :: V2 a -> a
+getX (V2 x _) = x
+
+drawDarkness :: Int -> Renderable
+drawDarkness x rs = do
+  let renderer = e_renderer $ r_engine rs
+  copy
+    renderer
+    (getTexture $ r_textures rs Darkness)
+    Nothing
+    (Just $ Rectangle (P $ V2 (fromIntegral x) 0) (V2 20 200))
+  rendererDrawColor renderer $= V4 0 0 0 255
+  fillRect renderer
+    $ Just $ Rectangle (P $ V2 (fromIntegral x + 20) 0) (V2 1000 1000)
 
 
 gameDfa :: ReaderT (Embedding FrameInfo Renderable FrameInfo Renderable) (Swont FrameInfo Renderable) ()

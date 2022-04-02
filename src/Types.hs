@@ -46,12 +46,17 @@ data FieldName
   = TestField
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+data GameTexture
+  = Darkness
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
 
 data Resources = Resources
   { r_engine :: Engine
   , r_font :: Char -> Maybe Texture
   , r_sprites :: CharName -> Anim -> [WrappedTexture]
   , r_fields :: FieldName -> Field
+  , r_textures :: GameTexture -> WrappedTexture
   }
 
 data Field = Field
