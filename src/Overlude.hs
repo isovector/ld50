@@ -95,8 +95,12 @@ timedSequence interval sfs =
     traverse_ (dswont . (&&& after interval ())) sfs
 
 
+frameSpeed :: CharName -> Anim -> Double
+frameSpeed _ Idle = 0.5
+frameSpeed _ _ = 0.1
+
 playAnimation :: CharName -> Anim -> Resources -> SF Time WrappedTexture
-playAnimation c a rs = timedSequence 0.1 $ cycle $ fmap always $ r_sprites rs c a
+playAnimation c a rs = timedSequence (frameSpeed c a) $ cycle $ fmap always $ r_sprites rs c a
 
 drawSpriteStretched :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> V2 Int -> Renderable
 drawSpriteStretched wt pos theta flips stretch rs = do

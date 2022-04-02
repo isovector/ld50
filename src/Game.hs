@@ -16,10 +16,13 @@ bgColor col rs = do
   rendererDrawColor renderer $= col
   clear renderer
 
+clampedArrows :: Controls -> V2 Int
+clampedArrows = modifyX (clamp (0, 1)) . c_arrows
+
 
 charpos :: Field -> SF FrameInfo (V2 Double)
 charpos f = loopPre (V2 0 40) $ proc (FrameInfo controls dt, pos) -> do
-  let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ modifyX (clamp (0, 1)) $ c_arrows controls
+  let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ clampedArrows controls
   returnA -< dup $
     let pos' = pos + dpos
      in case f_walkable f (worldToTile f pos') of
@@ -68,26 +71,37 @@ field rs = proc fi@(FrameInfo controls _) -> do
           False -> mempty
   now <- time -< ()
 
-  pos <- charpos (r_fields rs TestField) -< fi
-  mc     <- playAnimation MainCharacter Run rs -< now
-  clap   <- playAnimation Claptrap NoAnim rs   -< now
-  martha <- playAnimation Martha Idle rs       -< now
+  pos     <- charpos (r_fields rs TestField)     -< fi
+  mc_run  <- playAnimation MainCharacter Run rs  -< now
+  mc_idle <- playAnimation MainCharacter Idle rs -< now
+  clap    <- playAnimation Claptrap NoAnim rs    -< now
+  martha  <- playAnimation Martha Idle rs        -< now
 
   returnA -< \rs' -> do
     bg rs
     let f = r_fields rs TestField
         tiles = f_data f
-
-    let cam = pos
+        cam = pos
 
     for_ [0 .. 16] $ \y ->
       for_ [0 .. 16] $ \x ->
-        case tiles x y of
-          Just wt ->
-            drawSprite wt (asPerCamera cam $ (* f_tilesize f) $ fmap fromIntegral $ V2 x y) 0 (pure False) rs'
-          Nothing -> pure ()
-    let stretch = bool 0 (V2 5 0) $ getX (c_arrows controls) < 0
-    drawSpriteStretched mc (asPerCamera cam pos) 0 (pure False) stretch rs'
+        for_ (tiles x y) $ \wt ->
+          drawSprite
+            wt
+            (asPerCamera cam $ (* f_tilesize f) $ fmap fromIntegral $ V2 x y)
+            0
+            (pure False)
+            rs'
+
+    let stretch = bool 0 (V2 2 0) $ getX (c_arrows controls) < 0
+    drawSpriteStretched
+      (bool mc_idle mc_run $ clampedArrows controls /= 0)
+      (asPerCamera cam pos)
+      0
+      (pure False)
+      stretch
+      rs'
+
     drawSprite clap (asPerCamera cam $ V2 60 40) 0 (pure True) rs'
 
     let martha_pos = asPerCamera cam $ V2 80 80
