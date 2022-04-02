@@ -55,6 +55,8 @@ data Resources = Resources
 
 data Field = Field
   { f_data :: Int -> Int -> Maybe WrappedTexture
+  , f_tilesize :: V2 Double
+  , f_static_collision :: Int -> Int -> Bool
   }
 
 data FrameInfo = FrameInfo

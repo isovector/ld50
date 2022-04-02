@@ -86,5 +86,7 @@ output rs _ render = do
 
 
 floatSeconds :: SystemTime -> Double
-floatSeconds tS = fromIntegral (systemSeconds tS) + fromIntegral (systemNanoseconds tS) / 1e9
+floatSeconds t
+  = fromIntegral (systemSeconds t)
+  + fromIntegral (systemNanoseconds t) / 1e9
 

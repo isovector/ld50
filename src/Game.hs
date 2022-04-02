@@ -7,6 +7,7 @@ import Overlude hiding (now)
 import SDL hiding (time)
 import Control.Monad.Reader
 import Data.Foldable (for_)
+import Debug.Trace (traceM)
 
 
 bgColor :: V4 Word8 -> Renderable
@@ -17,7 +18,7 @@ bgColor col rs = do
 
 
 charpos :: SF FrameInfo (V2 Double)
-charpos = loopPre (V2 0 0) $ proc (FrameInfo controls dt, pos) -> do
+charpos = loopPre (V2 80 40) $ proc (FrameInfo controls dt, pos) -> do
   let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ c_arrows controls
   returnA -< dup $ pos + dpos
 
@@ -46,13 +47,16 @@ field rs = proc fi@(FrameInfo controls _) -> do
 
   returnA -< \rs' -> do
     bg rs
-    let field = f_data $ r_fields rs TestField
+    let f = r_fields rs TestField
+        tiles = f_data f
     for_ [0 .. 16] $ \y ->
       for_ [0 .. 16] $ \x ->
-        case field x y of
+        case tiles x y of
           Just wt ->
-            drawSprite wt (fmap fromIntegral $ V2 x y * 16) 0 (pure False) rs'
+            drawSprite wt ((* f_tilesize f) $ fmap fromIntegral $ V2 x y) 0 (pure False) rs'
           Nothing -> pure ()
+    let V2 ix iy = fmap round $ pos * fmap (1 /) (f_tilesize f)
+    traceM $ show $ f_static_collision f ix iy
     drawSprite mc pos 0 (pure False) rs'
     drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
     drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'

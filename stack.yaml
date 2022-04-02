@@ -5,6 +5,6 @@ packages:
 
 extra-deps:
 - Yampa-0.13.3
-- aeson-tiled-0.0.1.0
+- ../aeson-tiled
 
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Resources where
 
 import           Control.Monad
@@ -9,7 +11,9 @@ import qualified Data.Vector as V
 import           Overlude
 import           SDL
 import qualified SDL.Image as Image
-import System.FilePath (dropFileName, takeDirectory)
+import           System.FilePath (dropFileName)
+import GHC.Stack (HasCallStack)
+import Data.Aeson
 
 
 pad :: Int -> Char -> String -> String
@@ -67,7 +71,7 @@ globalToLocal ts gbl
 
 -- TODO(sandy): Super partial function. Sorry. But the tiled datastructure is
 -- fucking insane.
-parseTilemap :: Engine -> FieldName -> Tiledmap -> IO Field
+parseTilemap :: HasCallStack => Engine -> FieldName -> Tiledmap -> IO Field
 parseTilemap e f ti = do
   let renderer = e_renderer e
   let layer = tiledmapLayers ti V.! 0
@@ -76,25 +80,45 @@ parseTilemap e f ti = do
       fmap (ts, ) . Image.loadTexture renderer
                   $ dropFileName (fieldPath f) <> tilesetImage ts
   let (ts, tx) = tilesets V.! 0
+      size = fmap fromIntegral
+           $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
 
-  pure $ Field $ \x y ->
-    case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
-         , layerData layer
-         ) of
-      (True, Just tiledata) -> do
-        let idx = y * tiledmapWidth ti + x
-            Just (LocalId tile) = globalToLocal ts $ tiledata V.! idx
-            ix = tile `mod` tilesetColumns ts
-            iy = tile `div` tilesetColumns ts
-            -- tile = tilesetTiles ts M.! lcl
-            size = fmap fromIntegral
-                 $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
-        Just $ WrappedTexture
-          { getTexture = tx
-          , wt_sourceRect = Just $ (Rectangle (P ((* size) $ fmap fromIntegral $ V2 ix iy)) size)
-          , wt_size = size
-          }
-      _ -> Nothing
+  pure $ Field
+    { f_data = \x y ->
+        case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
+            , layerData layer
+            ) of
+          (True, Just tiledata) -> do
+            let idx = y * tiledmapWidth ti + x
+                Just (LocalId tile) = globalToLocal ts $ tiledata V.! idx
+                ix = tile `mod` tilesetColumns ts
+                iy = tile `div` tilesetColumns ts
+                -- tile = tilesetTiles ts M.! lcl
+            Just $ WrappedTexture
+              { getTexture = tx
+              , wt_sourceRect = Just
+                              $ Rectangle (P $ (* size) $ fmap fromIntegral $ V2 ix iy)
+                              $ size
+              , wt_size = size
+              }
+          _ -> Nothing
+    , f_tilesize = fmap fromIntegral size
+    , f_static_collision = \x y ->
+        case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
+            , layerData layer
+            ) of
+          (True, Just tiledata) -> do
+            let idx = y * tiledmapWidth ti + x
+                Just lid = globalToLocal ts $ tiledata V.! idx
+                props = tilesetTiles ts M.! lid
+            maybe False (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
+          _ -> True
+    }
+
+isWalkable :: Value -> Bool
+isWalkable (Bool b) = b
+isWalkable Null = True
+isWalkable _ = error "insane value for isWalkable. broken tileset"
 
 within :: Int -> Int -> Int -> Bool
 within x lo hi = lo <= x && x < hi

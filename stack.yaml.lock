@@ -11,13 +11,6 @@ packages:
       sha256: 1311995e61b3cc9ccb8d685975ce6e7d485cc4bc782299dee8a834188f564a00
   original:
     hackage: Yampa-0.13.3
-- completed:
-    hackage: aeson-tiled-0.0.1.0@sha256:2d7e85e9a3c20ba5b2c9acad84a3d48e5d84dfdd221c1da6dbe815aed1c81839,1697
-    pantry-tree:
-      size: 495
-      sha256: 20c38242b529b30e5d234aad9224f2aa41cbc4fa9ae99b3abdb242f79c09d3dd
-  original:
-    hackage: aeson-tiled-0.0.1.0
 snapshots:
 - completed:
     size: 586286
