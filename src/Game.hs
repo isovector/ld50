@@ -29,9 +29,9 @@ game rs = runSwont (runReaderT gameDfa (Embedding id)) $ const $
     returnA -< \rs' -> do
       bg rs
       let renderer = e_renderer $ r_engine rs'
-      copy renderer mc Nothing $ Just $ (Rectangle (P (V2 40 80)) (V2 16 24))
-      copy renderer clap Nothing $ Just $ (Rectangle (P (V2 60 40)) (V2 16 24))
-      copy renderer martha Nothing $ Just $ (Rectangle (P (V2 80 80)) (V2 16 24))
+      copyEx renderer mc Nothing (Just $ (Rectangle (P (V2 40 80)) (V2 16 24))) 0 Nothing (pure False)
+      copyEx renderer clap Nothing (Just $ (Rectangle (P (V2 60 40)) (V2 16 24))) 0 Nothing (pure True)
+      copyEx renderer martha Nothing (Just $ (Rectangle (P (V2 80 80)) (V2 16 24))) 0 Nothing (V2 True False)
   -- ((arr $ \c -> do
   -- ) &&& _
   -- ) >>> _
