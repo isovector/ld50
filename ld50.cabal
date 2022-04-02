@@ -26,7 +26,9 @@ source-repository head
 executable ld50-exe
   main-is: Main.hs
   other-modules:
+      Game
       Lib
+      Types
       Paths_ld50
   hs-source-dirs:
       src
