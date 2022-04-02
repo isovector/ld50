@@ -7,7 +7,6 @@ import Overlude hiding (now)
 import SDL hiding (time)
 import Control.Monad.Reader
 import Data.Foldable (for_)
-import Debug.Trace (traceM)
 
 
 bgColor :: V4 Word8 -> Renderable
@@ -17,10 +16,14 @@ bgColor col rs = do
   clear renderer
 
 
-charpos :: SF FrameInfo (V2 Double)
-charpos = loopPre (V2 80 40) $ proc (FrameInfo controls dt, pos) -> do
+charpos :: Field -> SF FrameInfo (V2 Double)
+charpos f = loopPre (V2 80 40) $ proc (FrameInfo controls dt, pos) -> do
   let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ c_arrows controls
-  returnA -< dup $ pos + dpos
+  returnA -< dup $
+    let pos' = pos + dpos
+     in case f_walkable f (worldToTile f pos') of
+          True -> pos'
+          False -> pos
 
 
 game :: Resources -> SF FrameInfo Renderable
@@ -32,6 +35,10 @@ game rs
           stdWaitFor (== Restart) (field rs)
       gameDfa
 
+worldToTile :: Field -> V2 Double -> V2 Int
+worldToTile f pos =
+  fmap floor $ pos * fmap (1 /) (f_tilesize f)
+
 field :: Resources -> SF FrameInfo Renderable
 field rs = proc fi@(FrameInfo controls _) -> do
   let bg = do
@@ -40,7 +47,8 @@ field rs = proc fi@(FrameInfo controls _) -> do
           False -> mempty
   now <- time -< ()
 
-  pos <- charpos -< fi
+
+  pos <- charpos (r_fields rs TestField) -< fi
   mc     <- playAnimation MainCharacter Run rs -< now
   clap   <- playAnimation Claptrap NoAnim rs   -< now
   martha <- playAnimation Martha Idle rs       -< now
@@ -55,8 +63,6 @@ field rs = proc fi@(FrameInfo controls _) -> do
           Just wt ->
             drawSprite wt ((* f_tilesize f) $ fmap fromIntegral $ V2 x y) 0 (pure False) rs'
           Nothing -> pure ()
-    let V2 ix iy = fmap floor $ pos * fmap (1 /) (f_tilesize f)
-    traceM $ show $ f_static_collision f ix iy
     drawSprite mc pos 0 (pure False) rs'
     drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
     drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'

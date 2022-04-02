@@ -112,7 +112,7 @@ parseTilemap e f ti = do
               }
           _ -> Nothing
     , f_tilesize = fmap fromIntegral size
-    , f_static_collision = \x y ->
+    , f_walkable = \(V2 x y) ->
         case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
             , layerData layer
             ) of
@@ -120,8 +120,8 @@ parseTilemap e f ti = do
             let idx = y * tiledmapWidth ti + x
                 Just lid = globalToLocal ts $ tiledata V.! idx
                 props = tilesetTiles ts M.! lid
-            maybe False (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
-          _ -> True
+            maybe True (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
+          _ -> False
     }
 
 isWalkable :: Value -> Bool
