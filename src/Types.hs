@@ -20,12 +20,13 @@ data Engine = Engine
 
 data Controls = Controls
   { c_action :: Bool
+  , c_restart :: Bool
   , c_arrows :: V2 Int
   }
 
 
 defaultControls :: Controls
-defaultControls = Controls False $ pure 0
+defaultControls = Controls False False $ pure 0
 
 data CharName
   = MainCharacter
@@ -67,4 +68,10 @@ newtype Swont i o a = Swont
   { runSwont' :: Cont (SF i o) a
   }
   deriving newtype (Functor, Applicative, Monad)
+
+
+data Message
+  = Ok
+  | Restart
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 

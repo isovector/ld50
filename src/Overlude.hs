@@ -39,14 +39,24 @@ over interval sf = do
   lift . swont $ embed' $ sf &&& (after interval () >>> iPre NoEvent)
 
 
+stdWaitFor :: (Message -> Bool) -> SF Controls b -> ReaderT (Embedding Controls b i o) (Swont i o) ()
+stdWaitFor b sf = do
+  Embedding embed' <- ask
+  lift . swont $ embed' $ waitForMessage b sf
+
 stdWait :: b -> ReaderT (Embedding Controls b i o) (Swont i o) ()
 stdWait sf = do
   Embedding embed' <- ask
-  lift . swont $ embed' $ wait sf
+  lift . swont $ embed' $ waitForOk $ constant sf
 
+waitForMessage :: (Message -> Bool) -> SF Controls o -> SF Controls (o, Event ())
+waitForMessage b sf = sf &&& (waitControls >>> arr (any b) >>> edge)
 
-wait :: c -> SF Controls (c, Event ())
-wait sf = constant sf &&& (waitControls >>> arr (not . null) >>> edge)
+waitForOk :: SF Controls o -> SF Controls (o, Event ())
+waitForOk = waitForMessage (== Ok)
+
+waitForRestart :: SF Controls o -> SF Controls (o, Event ())
+waitForRestart = waitForMessage (== Restart)
 
 
 swont :: SF a (b, Event c) -> Swont a b c

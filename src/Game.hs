@@ -24,24 +24,27 @@ charpos = loopPre (V2 0 0) $
 
 
 game :: Resources -> SF Controls Renderable
-game rs = runSwont (runReaderT gameDfa (Embedding id)) $ const $
-  proc controls -> do
-    let bg = do
-          case c_action controls of
-            True -> bgColor $ V4 255 0 0 255
-            False -> mempty
-    now <- time -< ()
+game rs = runSwont (runReaderT (stdWaitFor (== Restart) (field rs) >> gameDfa) (Embedding id)) . const $ field rs
 
-    pos <- charpos -< controls
-    mc     <- playAnimation MainCharacter Run rs -< now
-    clap   <- playAnimation Claptrap NoAnim rs   -< now
-    martha <- playAnimation Martha Idle rs       -< now
 
-    returnA -< \rs' -> do
-      bg rs
-      drawSprite mc pos 0 (pure False) rs'
-      drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
-      drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'
+field :: Resources -> SF Controls Renderable
+field rs = proc controls -> do
+  let bg = do
+        case c_action controls of
+          True -> bgColor $ V4 255 0 0 255
+          False -> mempty
+  now <- time -< ()
+
+  pos <- charpos -< controls
+  mc     <- playAnimation MainCharacter Run rs -< now
+  clap   <- playAnimation Claptrap NoAnim rs   -< now
+  martha <- playAnimation Martha Idle rs       -< now
+
+  returnA -< \rs' -> do
+    bg rs
+    drawSprite mc pos 0 (pure False) rs'
+    drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
+    drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'
 
 
 gameDfa :: ReaderT (Embedding Controls Renderable Controls Renderable) (Swont Controls Renderable) ()
