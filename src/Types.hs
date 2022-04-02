@@ -48,6 +48,10 @@ data Resources = Resources
   , r_sprites :: CharName -> Anim -> [WrappedTexture]
   }
 
+data FrameInfo = FrameInfo
+  { fi_controls :: Controls
+  , fi_dt :: Double
+  }
 
 type Renderable = Resources -> IO ()
 

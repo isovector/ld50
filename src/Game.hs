@@ -15,27 +15,27 @@ bgColor col rs = do
   clear renderer
 
 
-charpos :: SF Controls (V2 Double)
-charpos = loopPre (V2 0 0) $
-  proc (controls, pos) -> do
-    -- TODO(sandy): stupid and seems to be based on the frame rate
-    let dpos = fmap (* 2) $ fmap fromIntegral $ c_arrows controls
-    returnA -< dup $ pos + dpos
+charpos :: SF FrameInfo (V2 Double)
+charpos = loopPre (V2 0 0) $ proc (FrameInfo controls dt, pos) -> do
+  let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ c_arrows controls
+  returnA -< dup $ pos + dpos
 
 
-game :: Resources -> SF Controls Renderable
-game rs = runSwont (runReaderT (stdWaitFor (== Restart) (field rs) >> gameDfa) (Embedding id)) . const $ field rs
+game :: Resources -> SF FrameInfo Renderable
+game rs
+  = runSwont (runReaderT (stdWaitFor (== Restart) (field rs) >> gameDfa) (Embedding id)) . const
+  $ field rs
 
 
-field :: Resources -> SF Controls Renderable
-field rs = proc controls -> do
+field :: Resources -> SF FrameInfo Renderable
+field rs = proc fi@(FrameInfo controls _) -> do
   let bg = do
         case c_action controls of
           True -> bgColor $ V4 255 0 0 255
           False -> mempty
   now <- time -< ()
 
-  pos <- charpos -< controls
+  pos <- charpos -< fi
   mc     <- playAnimation MainCharacter Run rs -< now
   clap   <- playAnimation Claptrap NoAnim rs   -< now
   martha <- playAnimation Martha Idle rs       -< now
@@ -47,7 +47,7 @@ field rs = proc controls -> do
     drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'
 
 
-gameDfa :: ReaderT (Embedding Controls Renderable Controls Renderable) (Swont Controls Renderable) ()
+gameDfa :: ReaderT (Embedding FrameInfo Renderable FrameInfo Renderable) (Swont FrameInfo Renderable) ()
 gameDfa = do
   over 1.9 $ time >>> arr (\t -> bgColor $ V4 (round $ 255 * (1 - t / 2)) 0 0 255)
   stdWait $ \rs -> do

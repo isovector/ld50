@@ -45,7 +45,7 @@ main = do
   tRef <- newIORef seconds
 
   reactimate
-    (pure defaultControls)
+    (pure $ FrameInfo defaultControls 0.016)
     (input tRef)
     (output rs)
     (game rs)
@@ -53,7 +53,7 @@ main = do
 
 
 
-input :: IORef Double -> Bool -> IO (DTime, Maybe Controls)
+input :: IORef Double -> Bool -> IO (DTime, Maybe FrameInfo)
 input tRef _ = do
   pumpEvents
   es <- pollEvents
@@ -66,7 +66,7 @@ input tRef _ = do
   keys <- getKeyboardState
 
   let dt = min 0.016 (seconds' - seconds)
-  pure (realToFrac dt, Just $ parseControls keys)
+  pure (realToFrac dt, Just $ FrameInfo (parseControls keys) dt)
 
 
 isQuit :: EventPayload -> Bool
