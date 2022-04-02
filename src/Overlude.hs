@@ -104,9 +104,9 @@ drawSprite wt pos theta flips rs = do
     renderer
     (getTexture wt)
     (wt_sourceRect wt)
-    (Just $ Rectangle (P $ fmap round pos) $ wt_size wt)
+    (Just $ Rectangle (P $ fmap round pos - wt_origin wt) $ wt_size wt)
     (CDouble theta)
-    Nothing
+    (Just $ P $ wt_origin wt)
     flips
 
 

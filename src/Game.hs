@@ -55,7 +55,7 @@ field rs = proc fi@(FrameInfo controls _) -> do
           Just wt ->
             drawSprite wt ((* f_tilesize f) $ fmap fromIntegral $ V2 x y) 0 (pure False) rs'
           Nothing -> pure ()
-    let V2 ix iy = fmap round $ pos * fmap (1 /) (f_tilesize f)
+    let V2 ix iy = fmap floor $ pos * fmap (1 /) (f_tilesize f)
     traceM $ show $ f_static_collision f ix iy
     drawSprite mc pos 0 (pure False) rs'
     drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'

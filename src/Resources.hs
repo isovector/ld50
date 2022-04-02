@@ -3,17 +3,17 @@
 module Resources where
 
 import           Control.Monad
+import           Data.Aeson
 import           Data.Aeson.Tiled
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
 import           Data.Traversable
 import qualified Data.Vector as V
+import           GHC.Stack (HasCallStack)
 import           Overlude
 import           SDL
 import qualified SDL.Image as Image
 import           System.FilePath (dropFileName)
-import GHC.Stack (HasCallStack)
-import Data.Aeson
 
 
 pad :: Int -> Char -> String -> String
@@ -31,7 +31,15 @@ wrapTexture t = do
     { getTexture = t
     , wt_size = V2 (textureWidth q) $ textureHeight q
     , wt_sourceRect = Nothing
+    , wt_origin = 0
     }
+
+setGroundOrigin :: WrappedTexture -> WrappedTexture
+setGroundOrigin wt =
+  let V2 x y = wt_size wt
+   in wt
+        { wt_origin = V2 (x `div` 2) y
+        }
 
 
 frameCounts :: CharName -> Anim -> Int
@@ -100,6 +108,7 @@ parseTilemap e f ti = do
                               $ Rectangle (P $ (* size) $ fmap fromIntegral $ V2 ix iy)
                               $ size
               , wt_size = size
+              , wt_origin = 0
               }
           _ -> Nothing
     , f_tilesize = fmap fromIntegral size
@@ -138,7 +147,7 @@ loadResources e = do
       for [minBound @Anim .. maxBound] $ \anim ->  do
         frames <- for [0 .. frameCounts char anim - 1] $ \i -> do
           let fp = framePath char anim i
-          wrapTexture =<< Image.loadTexture renderer fp
+          fmap setGroundOrigin . wrapTexture =<< Image.loadTexture renderer fp
         pure ((char, anim), frames)
 
   fields <- fmap M.fromList $

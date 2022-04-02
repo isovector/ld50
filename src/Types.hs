@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StrictData         #-}
 
 module Types
   ( module Types
@@ -68,9 +69,10 @@ type Renderable = Resources -> IO ()
 
 
 data WrappedTexture = WrappedTexture
-  { getTexture :: Texture
+  { getTexture    :: Texture
   , wt_sourceRect :: Maybe (Rectangle CInt)
-  , wt_size    :: V2 CInt
+  , wt_size       :: V2 CInt
+  , wt_origin     :: V2 CInt
   }
 
 
