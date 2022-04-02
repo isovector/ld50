@@ -34,6 +34,58 @@ dependencies:
 - Yampa
 - simple-affine-space
 
+ghc-options:
+- -Wall
+
+default-extensions:
+  - BangPatterns
+  - BinaryLiterals
+  - ConstrainedClassMethods
+  - ConstraintKinds
+  - DataKinds
+  - DeriveDataTypeable
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveLift
+  - DeriveTraversable
+  - DoAndIfThenElse
+  - EmptyCase
+  - EmptyDataDecls
+  - EmptyDataDeriving
+  - ExistentialQuantification
+  - ExplicitForAll
+  - FlexibleContexts
+  - FlexibleInstances
+  - ForeignFunctionInterface
+  - GADTSyntax
+  - GeneralisedNewtypeDeriving
+  - HexFloatLiterals
+  - ImplicitPrelude
+  - ImportQualifiedPost
+  - InstanceSigs
+  - LambdaCase
+  - KindSignatures
+  - MonomorphismRestriction
+  - MultiParamTypeClasses
+  - NamedFieldPuns
+  - NamedWildCards
+  - NumericUnderscores
+  - PatternGuards
+  - PolyKinds
+  - PostfixOperators
+  - RankNTypes
+  - RelaxedPolyRec
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - StandaloneKindSignatures
+  - StarIsType
+  - TraditionalRecordSyntax
+  - TupleSections
+  - TypeApplications
+  - TypeOperators
+  - TypeSynonymInstances
+
 executables:
   ld50-exe:
     main:                Main.hs

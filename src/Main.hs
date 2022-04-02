@@ -50,7 +50,7 @@ main = do
   quit
 
 
-input :: IORef Float -> Bool -> IO (DTime, Maybe Controls)
+input :: IORef Double -> Bool -> IO (DTime, Maybe Controls)
 input tRef _ = do
   pumpEvents
   es <- pollEvents
@@ -82,6 +82,6 @@ output rs _ render = do
   pure False
 
 
-floatSeconds :: SystemTime -> Float
+floatSeconds :: SystemTime -> Double
 floatSeconds tS = fromIntegral (systemSeconds tS) + fromIntegral (systemNanoseconds tS) / 1e9
 
