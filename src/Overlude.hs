@@ -83,7 +83,7 @@ playAnimation :: CharName -> Anim -> Resources -> SF Time WrappedTexture
 playAnimation c a rs = timedSequence 0.1 $ cycle $ fmap always $ r_sprites rs c a
 
 
-drawSprite :: WrappedTexture -> V2 Float -> Double -> V2 Bool -> Renderable
+drawSprite :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> Renderable
 drawSprite wt pos theta flips rs = do
   let renderer = e_renderer $ r_engine rs
   copyEx
