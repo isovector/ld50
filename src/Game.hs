@@ -18,7 +18,7 @@ bgColor col rs = do
 
 
 charpos :: Field -> SF FrameInfo (V2 Double)
-charpos f = loopPre (V2 80 40) $ proc (FrameInfo controls dt, pos) -> do
+charpos f = loopPre (V2 0 40) $ proc (FrameInfo controls dt, pos) -> do
   let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ modifyX (clamp (0, 1)) $ c_arrows controls
   returnA -< dup $
     let pos' = pos + dpos
@@ -40,6 +40,16 @@ worldToTile :: Field -> V2 Double -> V2 Int
 worldToTile f pos =
   fmap floor $ pos * fmap (1 /) (f_tilesize f)
 
+
+screen :: V2 Double
+screen = V2 160 144
+
+halfScreen :: V2 Double
+halfScreen = screen * 0.5
+
+asPerCamera :: V2 Double -> V2 Double -> V2 Double
+asPerCamera cam pos = pos - cam + halfScreen
+
 field :: Resources -> SF FrameInfo Renderable
 field rs = proc fi@(FrameInfo controls _) -> do
   let bg = do
@@ -57,17 +67,20 @@ field rs = proc fi@(FrameInfo controls _) -> do
     bg rs
     let f = r_fields rs TestField
         tiles = f_data f
+
+    let cam = pos
+
     for_ [0 .. 16] $ \y ->
       for_ [0 .. 16] $ \x ->
         case tiles x y of
           Just wt ->
-            drawSprite wt ((* f_tilesize f) $ fmap fromIntegral $ V2 x y) 0 (pure False) rs'
+            drawSprite wt (asPerCamera cam $ (* f_tilesize f) $ fmap fromIntegral $ V2 x y) 0 (pure False) rs'
           Nothing -> pure ()
     let stretch = bool 0 (V2 5 0) $ getX (c_arrows controls) < 0
-    drawSpriteStretched mc pos 0 (pure False) stretch rs'
-    drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
-    drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'
-    drawDarkness (round $ getX pos + 4) rs'
+    drawSpriteStretched mc (asPerCamera cam pos) 0 (pure False) stretch rs'
+    drawSprite clap (asPerCamera cam $ V2 60 40) 0 (pure True) rs'
+    drawSprite martha (asPerCamera cam $ V2 80 80) 0 (V2 True False) rs'
+    drawDarkness (round $ getX (asPerCamera cam pos) + 4) rs'
 
 
 drawDarkness :: Int -> Renderable
