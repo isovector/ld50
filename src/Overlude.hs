@@ -9,7 +9,7 @@ module Overlude
 import           Control.Monad.Cont
 import           Control.Monad.Reader
 import           Controls
-import           Data.Foldable (for_)
+import           Data.Foldable (for_, traverse_)
 import           Data.Point2
 import qualified Data.Text as T
 import           SDL hiding (Event)
@@ -37,10 +37,12 @@ over interval sf = do
   Embedding embed' <- ask
   lift . swont $ embed' $ sf &&& (after interval () >>> iPre NoEvent)
 
+
 stdWait :: b -> ReaderT (Embedding Controls b i o) (Swont i o) ()
 stdWait sf = do
   Embedding embed' <- ask
   lift . swont $ embed' $ wait sf
+
 
 wait :: c -> SF Controls (c, Event ())
 wait sf = constant sf &&& (waitControls >>> arr (not . null) >>> edge)
@@ -48,6 +50,11 @@ wait sf = constant sf &&& (waitControls >>> arr (not . null) >>> edge)
 
 swont :: SF a (b, Event c) -> Swont a b c
 swont = Swont . cont . switch
+
+
+dswont :: SF a (b, Event c) -> Swont a b c
+dswont = Swont . cont . dSwitch
+
 
 always :: Arrow p => o -> p i o
 always = arr . const
@@ -63,4 +70,14 @@ drawText text (Point2 (round -> x) (round -> y)) rs = do
       $ Just
       $ Rectangle (P $ V2 (x + i * 8) y)
       $ V2 8 8
+
+
+timedSequence :: Double -> [SF i o] -> SF i o
+timedSequence interval sfs =
+  flip runSwont (error "timedSequence terminated") $
+    traverse_ (dswont . (&&& after interval ())) sfs
+
+
+playAnimation :: Character -> Anim -> Resources -> SF Time Texture
+playAnimation c a rs = timedSequence 0.1 $ cycle $ fmap always $ r_sprites rs c a
 

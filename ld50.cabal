@@ -30,6 +30,7 @@ executable ld50-exe
       Game
       Lib
       Overlude
+      Resources
       Types
       Paths_ld50
   hs-source-dirs:

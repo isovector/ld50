@@ -25,10 +25,22 @@ data Controls = Controls
 defaultControls :: Controls
 defaultControls = Controls False
 
+data Character
+  = MainCharacter
+  | Martha
+  | Claptrap
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data Anim
+  = Idle
+  | NoAnim
+  | Run
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Resources = Resources
   { r_engine :: Engine
   , r_font :: Char -> Maybe Texture
+  , r_sprites :: Character -> Anim -> [Texture]
   }
 
 
