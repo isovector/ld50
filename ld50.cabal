@@ -28,6 +28,7 @@ executable ld50-exe
   other-modules:
       Game
       Lib
+      Overlude
       Types
       Paths_ld50
   hs-source-dirs:

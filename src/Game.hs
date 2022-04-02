@@ -2,9 +2,8 @@
 
 module Game where
 
-import Types
+import Overlude
 import SDL
-import Control.Monad.Cont
 import Control.Monad.Reader
 
 
@@ -17,14 +16,15 @@ bgColor col rs = do
 
 game :: SF Controls Renderable
 game = runSwont (runReaderT gameDfa (Embedding id)) $ const $
-  arr $ const $ bgColor $ V4 0 0 0 255
+  arr $ \c ->
+    case c_action c of
+      True -> bgColor $ V4 255 0 0 255
+      False -> mempty
 
 
 gameDfa :: ReaderT (Embedding a Renderable Controls Renderable) (Swont Controls Renderable) ()
 gameDfa = do
-  over 0.5 $ arr $ const $ bgColor $ V4 255 0 0 255
-  over 0.5 $ arr $ const $ bgColor $ V4 0 255 0 255
-  over 0.5 $ arr $ const $ bgColor $ V4 0 0 255 255
-
-
+  over 0.5 $ always $ bgColor $ V4 255 0 0 255
+  over 0.5 $ always $ bgColor $ V4 0 255 0 255
+  over 0.5 $ always $ bgColor $ V4 0 0 255 255
 

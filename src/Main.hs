@@ -11,7 +11,7 @@ import FRP.Yampa
 import SDL hiding (copy, Stereo)
 import System.Exit
 import Foreign.C (CFloat)
-import Types
+import Overlude
 import Game (game)
 
 screenScale :: V2 CFloat
