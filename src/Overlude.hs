@@ -12,6 +12,7 @@ import           Controls
 import           Data.Foldable (for_, traverse_)
 import           Data.Point2
 import qualified Data.Text as T
+import           Foreign.C
 import           SDL hiding (Event)
 import           Types
 
@@ -78,6 +79,20 @@ timedSequence interval sfs =
     traverse_ (dswont . (&&& after interval ())) sfs
 
 
-playAnimation :: Character -> Anim -> Resources -> SF Time Texture
+playAnimation :: Character -> Anim -> Resources -> SF Time WrappedTexture
 playAnimation c a rs = timedSequence 0.1 $ cycle $ fmap always $ r_sprites rs c a
+
+
+drawSprite :: WrappedTexture -> V2 Float -> Double -> V2 Bool -> Renderable
+drawSprite wt pos theta flips rs = do
+  let renderer = e_renderer $ r_engine rs
+  copyEx
+    renderer
+    (getTexture wt)
+    Nothing
+    (Just $ Rectangle (P $ fmap round pos) $ wt_size wt)
+    (CDouble theta)
+    Nothing
+    flips
+
 

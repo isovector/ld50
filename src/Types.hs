@@ -6,10 +6,11 @@ module Types
   , Word8
   ) where
 
-import SDL hiding (Event)
-import FRP.Yampa
 import Control.Monad.Cont
 import Data.Word
+import FRP.Yampa
+import Foreign.C (CInt)
+import SDL hiding (Event)
 
 
 data Engine = Engine
@@ -31,20 +32,28 @@ data Character
   | Claptrap
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+
 data Anim
   = Idle
   | NoAnim
   | Run
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+
 data Resources = Resources
   { r_engine :: Engine
   , r_font :: Char -> Maybe Texture
-  , r_sprites :: Character -> Anim -> [Texture]
+  , r_sprites :: Character -> Anim -> [WrappedTexture]
   }
 
 
 type Renderable = Resources -> IO ()
+
+
+data WrappedTexture = WrappedTexture
+  { getTexture :: Texture
+  , wt_size    :: V2 CInt
+  }
 
 
 newtype Embedding a b d e = Embedding

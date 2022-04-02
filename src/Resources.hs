@@ -5,6 +5,7 @@ import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
 import           Data.Traversable
 import           Overlude
+import           SDL
 import qualified SDL.Image as Image
 
 
@@ -14,6 +15,15 @@ pad n c s =
    in case len >= n of
         True -> s
         False -> replicate (n - len) c <> s
+
+
+wrapTexture :: Texture -> IO WrappedTexture
+wrapTexture t = do
+  q <- queryTexture t
+  pure $ WrappedTexture
+    { getTexture = t
+    , wt_size = V2 (textureWidth q) $ textureHeight q
+    }
 
 
 frameCounts :: Character -> Anim -> Int
@@ -26,6 +36,7 @@ charName :: Character -> String
 charName MainCharacter = "mc"
 charName Martha        = "martha"
 charName Claptrap      = "claptrap"
+
 
 animName :: Anim -> String
 animName Idle   = "idle"
@@ -52,7 +63,7 @@ loadResources e = do
       for [minBound @Anim .. maxBound] $ \anim ->  do
         frames <- for [0 .. frameCounts char anim - 1] $ \i -> do
           let fp = framePath char anim i
-          Image.loadTexture renderer fp
+          wrapTexture =<< Image.loadTexture renderer fp
         pure ((char, anim), frames)
 
   pure $ Resources

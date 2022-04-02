@@ -18,20 +18,21 @@ bgColor col rs = do
 game :: Resources -> SF Controls Renderable
 game rs = runSwont (runReaderT gameDfa (Embedding id)) $ const $
   proc controls -> do
-    bg <- arr id -< arr $ do
-      case c_action controls of
-        True -> bgColor $ V4 255 0 0 255
-        False -> mempty
+    let bg = do
+          case c_action controls of
+            True -> bgColor $ V4 255 0 0 255
+            False -> mempty
     now <- time -< ()
-    mc <- playAnimation MainCharacter Run rs -< now
-    clap <- playAnimation Claptrap Idle rs -< now
+
+    mc     <- playAnimation MainCharacter Run rs -< now
+    clap   <- playAnimation Claptrap Idle rs -< now
     martha <- playAnimation Martha Idle rs -< now
+
     returnA -< \rs' -> do
       bg rs
-      let renderer = e_renderer $ r_engine rs'
-      copyEx renderer mc Nothing (Just $ (Rectangle (P (V2 40 80)) (V2 16 24))) 0 Nothing (pure False)
-      copyEx renderer clap Nothing (Just $ (Rectangle (P (V2 60 40)) (V2 16 24))) 0 Nothing (pure True)
-      copyEx renderer martha Nothing (Just $ (Rectangle (P (V2 80 80)) (V2 16 24))) 0 Nothing (V2 True False)
+      drawSprite mc (V2 40 80) 0 (pure False) rs'
+      drawSprite clap (V2 60 40) 0 (pure True) rs'
+      drawSprite martha (V2 80 80) 0 (V2 True False) rs'
   -- ((arr $ \c -> do
   -- ) &&& _
   -- ) >>> _
