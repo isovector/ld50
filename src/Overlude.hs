@@ -96,18 +96,36 @@ timedSequence interval sfs =
 playAnimation :: CharName -> Anim -> Resources -> SF Time WrappedTexture
 playAnimation c a rs = timedSequence 0.1 $ cycle $ fmap always $ r_sprites rs c a
 
-
-drawSprite :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> Renderable
-drawSprite wt pos theta flips rs = do
+drawSpriteStretched :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> V2 Int -> Renderable
+drawSpriteStretched wt pos theta flips stretch rs = do
   let renderer = e_renderer $ r_engine rs
+      stretched = fmap fromIntegral stretch
   copyEx
     renderer
     (getTexture wt)
     (wt_sourceRect wt)
-    (Just $ Rectangle (P $ fmap round pos - wt_origin wt) $ wt_size wt)
+    (Just $ Rectangle (P $ fmap round pos - wt_origin wt - stretched) $ wt_size wt + stretched)
     (CDouble theta)
     (Just $ P $ wt_origin wt)
     flips
+
+drawSprite :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> Renderable
+drawSprite wt pos theta flips = drawSpriteStretched wt pos theta flips 0
+
+clamp :: Ord a => (a, a) -> a -> a
+clamp (lo, hi) a = min hi $ max lo a
+
+getX :: V2 a -> a
+getX (V2 x _) = x
+
+modifyX :: (a -> a) -> V2 a -> V2 a
+modifyX f (V2 x y) = V2 (f x) y
+
+getY :: V2 a -> a
+getY (V2 _ y) = y
+
+modifyY :: (a -> a) -> V2 a -> V2 a
+modifyY f (V2 x y) = V2 x (f y)
 
 
 composite

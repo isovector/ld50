@@ -7,6 +7,7 @@ import Overlude hiding (now)
 import SDL hiding (time)
 import Control.Monad.Reader
 import Data.Foldable (for_)
+import Data.Bool (bool)
 
 
 bgColor :: V4 Word8 -> Renderable
@@ -18,7 +19,7 @@ bgColor col rs = do
 
 charpos :: Field -> SF FrameInfo (V2 Double)
 charpos f = loopPre (V2 80 40) $ proc (FrameInfo controls dt, pos) -> do
-  let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ c_arrows controls
+  let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ modifyX (clamp (0, 1)) $ c_arrows controls
   returnA -< dup $
     let pos' = pos + dpos
      in case f_walkable f (worldToTile f pos') of
@@ -47,7 +48,6 @@ field rs = proc fi@(FrameInfo controls _) -> do
           False -> mempty
   now <- time -< ()
 
-
   pos <- charpos (r_fields rs TestField) -< fi
   mc     <- playAnimation MainCharacter Run rs -< now
   clap   <- playAnimation Claptrap NoAnim rs   -< now
@@ -63,13 +63,12 @@ field rs = proc fi@(FrameInfo controls _) -> do
           Just wt ->
             drawSprite wt ((* f_tilesize f) $ fmap fromIntegral $ V2 x y) 0 (pure False) rs'
           Nothing -> pure ()
-    drawSprite mc pos 0 (pure False) rs'
+    let stretch = bool 0 (V2 5 0) $ getX (c_arrows controls) < 0
+    drawSpriteStretched mc pos 0 (pure False) stretch rs'
     drawSprite clap (V2 @Float 60 40) 0 (pure True) rs'
     drawSprite martha (V2 @Float 80 80) 0 (V2 True False) rs'
     drawDarkness (round $ getX pos + 4) rs'
 
-getX :: V2 a -> a
-getX (V2 x _) = x
 
 drawDarkness :: Int -> Renderable
 drawDarkness x rs = do
@@ -78,10 +77,10 @@ drawDarkness x rs = do
     renderer
     (getTexture $ r_textures rs Darkness)
     Nothing
-    (Just $ Rectangle (P $ V2 (fromIntegral x) 0) (V2 20 200))
+    (Just $ Rectangle (P $ V2 (fromIntegral x) 0) (V2 10 200))
   rendererDrawColor renderer $= V4 0 0 0 255
   fillRect renderer
-    $ Just $ Rectangle (P $ V2 (fromIntegral x + 20) 0) (V2 1000 1000)
+    $ Just $ Rectangle (P $ V2 (fromIntegral x + 10) 0) (V2 1000 1000)
 
 
 gameDfa :: ReaderT (Embedding FrameInfo Renderable FrameInfo Renderable) (Swont FrameInfo Renderable) ()
