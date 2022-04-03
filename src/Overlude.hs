@@ -133,6 +133,14 @@ getY (V2 _ y) = y
 modifyY :: (a -> a) -> V2 a -> V2 a
 modifyY f (V2 x y) = V2 x (f y)
 
+rectContains :: (Ord a, Num a) => Rectangle a -> V2 a -> Bool
+rectContains (Rectangle (P (V2 x y)) (V2 w h)) (V2 px py) = and
+  [ x <= px
+  , px < x + w
+  , y <= py
+  , py < y + h
+  ]
+
 
 composite
     :: (d -> d)

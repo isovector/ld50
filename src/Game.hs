@@ -84,6 +84,11 @@ field rs = proc fi@(FrameInfo controls _) -> do
     let f = r_fields rs TestField
         cam = pos
 
+    for_ (f_zones f) $ \zone -> do
+      if rectContains (z_rect zone) pos
+         then putStrLn $ show $ z_type zone
+         else pure ()
+
     drawTiles f cam rs'
 
     let stretch = bool 0 (V2 2 0) $ getX (c_arrows controls) < 0
