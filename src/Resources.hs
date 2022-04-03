@@ -5,6 +5,7 @@ module Resources where
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Tiled
+import           Data.Foldable (fold)
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
 import           Data.Traversable
@@ -88,47 +89,52 @@ globalToLocal ts gbl
 parseTilemap :: HasCallStack => Engine -> FieldName -> Tiledmap -> IO Field
 parseTilemap e f ti = do
   let renderer = e_renderer e
-  let layer = tiledmapLayers ti V.! 0
-  tilesets <-
-    for (tiledmapTilesets ti) $ \ts ->
-      fmap (ts, ) . Image.loadTexture renderer
-                  $ dropFileName (fieldPath f) <> tilesetImage ts
-  let (ts, tx) = tilesets V.! 0
-      size = fmap fromIntegral
-           $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
 
-  pure $ Field
-    { f_data = \x y ->
-        case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
-            , layerData layer
-            ) of
-          (True, Just tiledata) -> do
-            let idx = y * tiledmapWidth ti + x
-                Just (LocalId tile) = globalToLocal ts $ tiledata V.! idx
-                ix = tile `mod` tilesetColumns ts
-                iy = tile `div` tilesetColumns ts
-                -- tile = tilesetTiles ts M.! lcl
-            Just $ WrappedTexture
-              { getTexture = tx
-              , wt_sourceRect = Just
-                              $ Rectangle (P $ (* size) $ fmap fromIntegral $ V2 ix iy)
-                              $ size
-              , wt_size = size
-              , wt_origin = 0
-              }
-          _ -> Nothing
-    , f_tilesize = fmap fromIntegral size
-    , f_walkable = \(V2 x y) ->
-        case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
-            , layerData layer
-            ) of
-          (True, Just tiledata) -> do
-            let idx = y * tiledmapWidth ti + x
-                Just lid = globalToLocal ts $ tiledata V.! idx
-                props = tilesetTiles ts M.! lid
-            maybe True (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
-          _ -> False
-    }
+  res <- for (tiledmapLayers ti) $ \layer -> do
+    tilesets <-
+      for (tiledmapTilesets ti) $ \ts ->
+        fmap (ts, ) . Image.loadTexture renderer
+                    $ dropFileName (fieldPath f) <> tilesetImage ts
+    let (ts, tx) = tilesets V.! 0
+        size = fmap fromIntegral
+            $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
+
+    pure $ Field
+      { f_data = \x y ->
+          case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
+               , layerData layer
+               ) of
+            (True, Just tiledata) -> do
+              let idx = y * tiledmapWidth ti + x
+              case globalToLocal ts $ tiledata V.! idx of
+                Just (LocalId tile) -> do
+                  let ix = tile `mod` tilesetColumns ts
+                      iy = tile `div` tilesetColumns ts
+                  pure $ WrappedTexture
+                    { getTexture = tx
+                    , wt_sourceRect = Just
+                                    $ Rectangle (P $ (* size) $ fmap fromIntegral $ V2 ix iy)
+                                    $ size
+                    , wt_size = size
+                    , wt_origin = 0
+                    }
+                Nothing -> mempty
+            _ -> mempty
+      , f_tilesize = fmap fromIntegral size
+      , f_walkable = \(V2 x y) ->
+          case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
+               , layerData layer
+               ) of
+            (True, Just tiledata) -> do
+              let idx = y * tiledmapWidth ti + x
+              case globalToLocal ts $ tiledata V.! idx of
+                Just lid -> do
+                  let props = tilesetTiles ts M.! lid
+                  maybe True (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
+                Nothing -> True
+            _ -> False
+      }
+  pure $ fold res
 
 isWalkable :: Value -> Bool
 isWalkable (Bool b) = b

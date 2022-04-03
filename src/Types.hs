@@ -12,6 +12,9 @@ import Data.Word
 import FRP.Yampa
 import Foreign.C (CInt)
 import SDL hiding (Event)
+import Data.Coerce (coerce)
+import Data.Monoid (All(..))
+import Data.Semigroup (Max(..))
 
 
 data Engine = Engine
@@ -60,10 +63,21 @@ data Resources = Resources
   }
 
 data Field = Field
-  { f_data :: Int -> Int -> Maybe WrappedTexture
+  { f_data :: Int -> Int -> [WrappedTexture]
   , f_tilesize :: V2 Double
   , f_walkable :: V2 Int -> Bool
   }
+
+instance Semigroup Field where
+  Field f1 v1 p1 <> Field f2 v2 p2
+    = Field (f1 <> f2)
+            (coerce ((<>) @(Max (V2 Double))) v1 v2)
+            (coerce ((<>) @(V2 Int -> All)) p1 p2)
+
+instance Monoid Field where
+  mempty = Field mempty 0 $ const True
+
+
 
 data FrameInfo = FrameInfo
   { fi_controls :: Controls

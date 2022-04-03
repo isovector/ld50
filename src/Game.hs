@@ -21,7 +21,7 @@ clampedArrows = modifyX (clamp (0, 1)) . c_arrows
 
 
 charpos :: Field -> SF FrameInfo (V2 Double)
-charpos f = loopPre (V2 0 40) $ proc (FrameInfo controls dt, pos) -> do
+charpos f = loopPre (V2 40 60) $ proc (FrameInfo controls dt, pos) -> do
   let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ clampedArrows controls
   returnA -< dup $
     let pos' = pos + dpos
@@ -60,7 +60,7 @@ halfScreen = screen * 0.5
 
 asPerCamera :: V2 Double -> V2 Double -> V2 Double
 asPerCamera cam@(V2 camx camy) pos =
-  pos - cam + V2 (clamp (0, getX halfScreen + 40) camx)
+  pos - cam + V2 (clamp (0, getX halfScreen + 50) camx)
                  (clamp (0, getY halfScreen + 4)  camy)
 
 field :: Resources -> SF FrameInfo Renderable
