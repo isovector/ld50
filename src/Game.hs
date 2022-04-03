@@ -63,6 +63,12 @@ asPerCamera cam@(V2 camx camy) pos =
   pos - cam + V2 (clamp (0, getX halfScreen + 50) camx)
                  (clamp (0, getY halfScreen + 4)  camy)
 
+invertCamera :: V2 Double -> V2 Double -> V2 Double
+invertCamera cam@(V2 camx camy) pos =
+  pos + cam - V2 (clamp (0, getX halfScreen + 50) camx)
+                 (clamp (0, getY halfScreen + 4)  camy)
+
+
 field :: Resources -> SF FrameInfo Renderable
 field rs = proc fi@(FrameInfo controls _) -> do
   let bg = do
@@ -83,8 +89,11 @@ field rs = proc fi@(FrameInfo controls _) -> do
         tiles = f_data f
         cam = pos
 
-    for_ [0 .. 16] $ \y ->
-      for_ [0 .. 16] $ \x ->
+    let topleft = worldToTile f $ invertCamera cam 0
+        botright = worldToTile f $ invertCamera cam screen
+
+    for_ [getY topleft .. getY botright] $ \y ->
+      for_ [getX topleft .. getX botright] $ \x ->
         for_ (tiles x y) $ \wt ->
           drawSprite
             wt
