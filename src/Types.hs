@@ -15,6 +15,7 @@ import SDL hiding (Event)
 import Data.Coerce (coerce)
 import Data.Monoid (All(..))
 import Data.Semigroup (Max(..))
+import Control.Monad.Reader
 
 
 data Engine = Engine
@@ -108,16 +109,31 @@ data WrappedTexture = WrappedTexture
   }
 
 
+--------------------------------------------------------------------------------
+-- | An embedding is an SF transformation from (a -> b) to (d -> e), such that
+-- they also carry along an @Event c@. Why would you want to do that? So that
+-- you can embed one SF to run inside of another, eg, if you are building
+-- a state machine via @Swont@.
 newtype Embedding a b d e = Embedding
   { getEmbedding :: forall c . SF a (b, Event c) -> SF d (e, Event c)
   }
   deriving (Functor)
+
+type Embedding' i o = Embedding i o i o
 
 
 newtype Swont i o a = Swont
   { runSwont' :: Cont (SF i o) a
   }
   deriving newtype (Functor, Applicative, Monad)
+
+------------------------------------------------------------------------------
+-- |
+newtype Compositing d e i o a = Compositing
+  { getCompositing :: ReaderT (Embedding d e d e) (Swont i o) a
+  } deriving (Functor, Applicative, Monad)
+
+type Compositing' i o = Compositing i o i o
 
 
 data Message

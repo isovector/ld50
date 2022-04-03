@@ -36,20 +36,25 @@ embedInpArr f = Embedding (arr f >>>)
 runSwont :: Swont i o a -> (a -> SF i o) -> SF i o
 runSwont x final = runCont (runSwont' x) final
 
+runCompositing :: (a -> SF i o) -> Compositing d e i o a -> SF i o
+runCompositing g f
+  = flip runSwont g
+  $ flip runReaderT (Embedding id) $ getCompositing f
 
-over :: Time -> SF a b -> ReaderT (Embedding a b d e) (Swont d e) ()
-over interval sf = do
+
+over :: Time -> SF i o -> Compositing' i o ()
+over interval sf = Compositing $ do
   Embedding embed' <- ask
   lift . swont $ embed' $ sf &&& (after interval () >>> iPre NoEvent)
 
-stdWaitFor :: (Message -> Bool) -> SF FrameInfo b -> ReaderT (Embedding FrameInfo b i o) (Swont i o) ()
-stdWaitFor b sf = do
+stdWaitFor :: (Message -> Bool) -> SF FrameInfo o -> Compositing' FrameInfo o ()
+stdWaitFor b sf = Compositing $ do
   Embedding embed' <- ask
   lift . swont $ embed' $ waitForMessage b sf
 
 
-stdWait :: b -> ReaderT (Embedding FrameInfo b i o) (Swont i o) ()
-stdWait sf = do
+stdWait :: o -> Compositing' FrameInfo o ()
+stdWait sf = Compositing $ do
   Embedding embed' <- ask
   lift . swont $ embed' $ waitForOk $ constant sf
 
@@ -63,6 +68,10 @@ waitForRestart :: SF FrameInfo o -> SF FrameInfo (o, Event ())
 waitForRestart = waitForMessage (== Restart)
 
 
+------------------------------------------------------------------------------
+-- | 'swont' embeds an SF that returns an event into a 'Swont'. The
+-- continuation is called when the event fires. This is the primary means of
+-- sequencing things in the 'Swont' monad.
 swont :: SF a (b, Event c) -> Swont a b c
 swont = Swont . cont . switch
 
@@ -70,9 +79,6 @@ swont = Swont . cont . switch
 dswont :: SF a (b, Event c) -> Swont a b c
 dswont = Swont . cont . dSwitch
 
-
-always :: Arrow p => o -> p i o
-always = arr . const
 
 
 drawText :: CInt -> V3 Word8 -> String -> V2 Double -> Resources -> IO ()
@@ -100,7 +106,7 @@ frameSpeed _ Idle = 0.5
 frameSpeed _ _ = 0.1
 
 playAnimation :: CharName -> Anim -> Resources -> SF Time WrappedTexture
-playAnimation c a rs = timedSequence (frameSpeed c a) $ cycle $ fmap always $ r_sprites rs c a
+playAnimation c a rs = timedSequence (frameSpeed c a) $ cycle $ fmap constant $ r_sprites rs c a
 
 drawSpriteStretched :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> V2 Int -> Renderable
 drawSpriteStretched wt pos theta flips stretch rs = do
@@ -143,10 +149,10 @@ rectContains (Rectangle (P (V2 x y)) (V2 w h)) (V2 px py) = and
 
 
 composite
-    :: (d -> d)
-    -> ReaderT (Embedding a b c d) (Swont i o) x
-    -> ReaderT (Embedding a b c d) (Swont i o) x
-composite f m = local (compEmbed $ embedArr f) m
+    :: (e -> e)
+    -> Compositing d e i o a
+    -> Compositing d e i o a
+composite f (Compositing m) = Compositing $ local (compEmbed $ embedArr f) m
 
 (*>.) :: Applicative m => (a -> m b) -> (a -> m c) -> a -> m c
 (*>.) = liftA2 (*>)

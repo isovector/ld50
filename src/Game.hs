@@ -4,8 +4,7 @@
 module Game where
 
 import Overlude hiding (now)
-import SDL hiding (time)
-import Control.Monad.Reader
+import SDL hiding (get, Event, time)
 import Data.Foldable (for_)
 import Data.Bool (bool)
 
@@ -40,12 +39,13 @@ black = V3 0 0 0
 
 game :: Resources -> SF FrameInfo Renderable
 game rs
-  = flip runSwont (const $ field rs)
-  $ flip runReaderT (Embedding id) $ do
+  = runCompositing (const $ field rs) $ do
       composite (*>. drawText 4 blue "overlay" (V2 10 10)) $
         composite (drawText 12 black "underlay" (V2 10 80) *>.) $
           stdWaitFor (== Restart) (field rs)
       gameDfa
+
+
 
 worldToTile :: Field -> V2 Double -> V2 Int
 worldToTile f pos =
@@ -139,7 +139,7 @@ drawDarkness x rs = do
     $ Just $ Rectangle (P $ V2 (fromIntegral x + 10) 0) (V2 1000 1000)
 
 
-gameDfa :: ReaderT (Embedding FrameInfo Renderable FrameInfo Renderable) (Swont FrameInfo Renderable) ()
+gameDfa :: Compositing' FrameInfo Renderable ()
 gameDfa = do
   over 1.9 $ time >>> arr (\t -> bgColor $ V4 (round $ 255 * (1 - t / 2)) 0 0 255)
   stdWait $ \rs -> do
