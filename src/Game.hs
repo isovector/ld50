@@ -71,11 +71,7 @@ invertCamera cam@(V2 camx camy) pos =
 
 field :: Resources -> SF FrameInfo Renderable
 field rs = proc fi@(FrameInfo controls _) -> do
-  let bg = do
-        case c_action controls of
-          True -> bgColor $ V4 255 0 0 255
-          False -> mempty
-  now <- time -< ()
+  now     <- time -< ()
 
   pos     <- charpos (r_fields rs TestField)     -< fi
   mc_run  <- playAnimation MainCharacter Run rs  -< now
@@ -84,23 +80,11 @@ field rs = proc fi@(FrameInfo controls _) -> do
   martha  <- playAnimation Martha Idle rs        -< now
 
   returnA -< \rs' -> do
-    bg rs
+    bgColor (V4 255 0 0 255) rs'
     let f = r_fields rs TestField
-        tiles = f_data f
         cam = pos
 
-    let topleft = worldToTile f $ invertCamera cam 0
-        botright = worldToTile f $ invertCamera cam screen
-
-    for_ [getY topleft .. getY botright] $ \y ->
-      for_ [getX topleft .. getX botright] $ \x ->
-        for_ (tiles x y) $ \wt ->
-          drawSprite
-            wt
-            (asPerCamera cam $ (* f_tilesize f) $ fmap fromIntegral $ V2 x y)
-            0
-            (pure False)
-            rs'
+    drawTiles f cam rs'
 
     let stretch = bool 0 (V2 2 0) $ getX (c_arrows controls) < 0
     drawSpriteStretched
@@ -117,6 +101,23 @@ field rs = proc fi@(FrameInfo controls _) -> do
     drawText 4 white "help!" (martha_pos - V2 0 30) rs
     drawSprite martha (martha_pos) 0 (V2 True False) rs'
     drawDarkness (round $ getX (asPerCamera cam pos)) rs'
+
+
+drawTiles :: Field -> V2 Double -> Renderable
+drawTiles f cam rs = do
+  let tiles = f_data f
+      topleft = worldToTile f $ invertCamera cam 0
+      botright = worldToTile f $ invertCamera cam screen
+
+  for_ [getY topleft .. getY botright] $ \y ->
+    for_ [getX topleft .. getX botright] $ \x ->
+      for_ (tiles x y) $ \wt ->
+        drawSprite
+          wt
+          (asPerCamera cam $ (* f_tilesize f) $ fmap fromIntegral $ V2 x y)
+          0
+          (pure False)
+          rs
 
 
 drawDarkness :: Int -> Renderable
