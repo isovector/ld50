@@ -18,6 +18,7 @@ import           Data.Foldable (for_, traverse_)
 import           Data.Functor ((<&>))
 import           Data.Point2
 import qualified Data.Text as T
+import           Data.Void (Void, absurd)
 import           Foreign.C
 import           SDL hiding (time, Event)
 import           Types
@@ -38,26 +39,40 @@ embedInpArr f = Embedding (arr f >>>)
 runSwont :: Swont i o a -> (a -> SF i o) -> SF i o
 runSwont x final = runCont (runSwont' x) final
 
-runCompositing :: (a -> SF i o) -> Compositing d e i o a -> SF i o
-runCompositing g f
+unCompositing :: FSM d e -> (a -> SF i o) -> Compositing d e i o a -> SF i o
+unCompositing fsm g f
   = flip runSwont g
-  $ flip runReaderT (Embedding id) $ getCompositing f
+  $ flip runReaderT fsm $ getCompositing f
+
+runCompositing :: (a -> SF i o) -> Compositing d e i o a -> SF i o
+runCompositing = unCompositing (FSM (Embedding id) True)
+
+liftCompositing :: Swont i o a -> Compositing d e i o a
+liftCompositing = Compositing . ReaderT . const
+
+liftSwont :: SF i o -> Swont i o b
+liftSwont = swont . (&&& never)
+
+withRoot :: Swont (Bool, i) o a -> Compositing d e i o a
+withRoot m = Compositing $ ReaderT $ \fsm ->
+  prependSwont (constant (fsm_root fsm) &&& arr id) (arr snd) m
 
 
 over :: Time -> SF i o -> Compositing' i o ()
 over interval sf = Compositing $ do
-  Embedding embed' <- ask
+  Embedding embed' <- asks fsm_embedding
   lift . swont $ embed' $ sf &&& (after interval () >>> iPre NoEvent)
 
-stdWaitFor :: (Message -> Bool) -> SF FrameInfo o -> Compositing' FrameInfo o ()
+stdWaitFor :: (Message -> Bool) -> Compositing' FrameInfo o Void -> Compositing' FrameInfo o ()
 stdWaitFor b sf = Compositing $ do
-  Embedding embed' <- ask
-  lift . swont $ embed' $ waitForMessage b sf
+  fsm <- ask
+  let Embedding embed' = fsm_embedding fsm
+  lift . swont $ embed' $ waitForMessage b $ unCompositing fsm absurd sf
 
 
 stdWait :: o -> Compositing' FrameInfo o ()
 stdWait sf = Compositing $ do
-  Embedding embed' <- ask
+  Embedding embed' <- asks fsm_embedding
   lift . swont $ embed' $ waitForOk $ constant sf
 
 waitForMessage :: (Message -> Bool) -> SF FrameInfo o -> SF FrameInfo (o, Event ())
@@ -80,6 +95,12 @@ swont = Swont . cont . switch
 
 dswont :: SF a (b, Event c) -> Swont a b c
 dswont = Swont . cont . dSwitch
+
+prependSwont :: SF i i' -> SF i' i -> Swont i' o a -> Swont i o a
+prependSwont ii' i'i (Swont (runCont -> io)) = Swont $ cont $ \k -> ii' >>> io (\a -> i'i >>> k a)
+
+-- extendSwont :: Swont i o a -> SF o o' -> Swont i o' a
+-- extendSwont (Swont (runCont -> io)) oo' = Swont $ cont $ \k -> io (\a -> _) >>> oo'
 
 
 
@@ -147,11 +168,16 @@ rectContains (Rectangle (P (V2 x y)) (V2 w h)) (V2 px py) = and
   ]
 
 
+------------------------------------------------------------------------------
+-- |  Lift a function over the FSM, but unset the root flag when doing so.
+localFSM :: (Embedding' i o -> Embedding' i o) -> FSM i o -> FSM i o
+localFSM f (FSM e _) = FSM (f e) False
+
 composite
     :: (e -> e)
     -> Compositing d e i o a
     -> Compositing d e i o a
-composite f (Compositing m) = Compositing $ local (compEmbed $ embedArr f) m
+composite f (Compositing m) = Compositing $ local (localFSM $ compEmbed $ embedArr f) m
 
 (*>.) :: Applicative m => (a -> m b) -> (a -> m c) -> a -> m c
 (*>.) = liftA2 (*>)

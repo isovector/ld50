@@ -1,5 +1,6 @@
 {-# LANGUAGE Arrows            #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Game where
 
@@ -7,6 +8,7 @@ import Overlude hiding (now)
 import SDL hiding (get, Event, time)
 import Data.Foldable (for_)
 import Data.Bool (bool)
+import Data.Void (absurd)
 
 
 bgColor :: V4 Word8 -> Renderable
@@ -39,11 +41,11 @@ black = V3 0 0 0
 
 game :: Resources -> SF FrameInfo Renderable
 game rs
-  = runCompositing (const $ field rs) $ do
+  = runCompositing absurd $ do
       composite (*>. drawText 4 blue "overlay" (V2 10 10)) $
         composite (drawText 12 black "underlay" (V2 10 80) *>.) $
-          stdWaitFor (== Restart) (field rs)
-      gameDfa
+          stdWaitFor (== Restart) (withRoot $ liftSwont $ field rs)
+      withRoot $ liftSwont $ field rs
 
 
 
@@ -69,9 +71,9 @@ invertCamera cam@(V2 camx camy) pos =
                  (clamp (0, getY halfScreen + 4)  camy)
 
 
-field :: Resources -> SF FrameInfo Renderable
-field rs = proc fi@(FrameInfo controls _) -> do
-  pos     <- charpos (r_fields rs TestField)     -< fi
+field :: Resources -> SF (Bool, FrameInfo) Renderable
+field rs = proc (root, fi@(FrameInfo controls _)) -> do
+  pos     <- charpos (r_fields rs TestField)     -< fi { fi_controls = bool defaultControls controls root }
   anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
   mc      <- mkAnim rs MainCharacter -< anim
 

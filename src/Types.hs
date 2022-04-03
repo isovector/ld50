@@ -127,10 +127,15 @@ newtype Swont i o a = Swont
   }
   deriving newtype (Functor, Applicative, Monad)
 
+data FSM i o = FSM
+  { fsm_embedding :: Embedding i o i o
+  , fsm_root      :: Bool
+  }
+
 ------------------------------------------------------------------------------
 -- |
 newtype Compositing d e i o a = Compositing
-  { getCompositing :: ReaderT (Embedding d e d e) (Swont i o) a
+  { getCompositing :: ReaderT (FSM d e) (Swont i o) a
   } deriving (Functor, Applicative, Monad)
 
 type Compositing' i o = Compositing i o i o
