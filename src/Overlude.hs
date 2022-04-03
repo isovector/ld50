@@ -1,3 +1,4 @@
+{-# LANGUAGE Arrows       #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Overlude
@@ -14,10 +15,11 @@ import           Control.Monad.Cont
 import           Control.Monad.Reader
 import           Controls
 import           Data.Foldable (for_, traverse_)
+import           Data.Functor ((<&>))
 import           Data.Point2
 import qualified Data.Text as T
 import           Foreign.C
-import           SDL hiding (Event)
+import           SDL hiding (time, Event)
 import           Types
 
 
@@ -105,9 +107,6 @@ frameSpeed :: CharName -> Anim -> Double
 frameSpeed _ Idle = 0.5
 frameSpeed _ _ = 0.1
 
-playAnimation :: CharName -> Anim -> Resources -> SF Time WrappedTexture
-playAnimation c a rs = timedSequence (frameSpeed c a) $ cycle $ fmap constant $ r_sprites rs c a
-
 drawSpriteStretched :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> V2 Int -> Renderable
 drawSpriteStretched wt pos theta flips stretch rs = do
   let renderer = e_renderer $ r_engine rs
@@ -156,4 +155,20 @@ composite f (Compositing m) = Compositing $ local (compEmbed $ embedArr f) m
 
 (*>.) :: Applicative m => (a -> m b) -> (a -> m c) -> a -> m c
 (*>.) = liftA2 (*>)
+
+
+sequenceFinite :: (Enum c, Bounded c, Applicative f) => (c -> f a) -> f (c -> a)
+sequenceFinite f =
+  let elems = [minBound .. maxBound]
+      fas = fmap (zip elems) $sequenceA $ fmap f elems
+   in fas <&> \cas c -> snd $ head $ drop (fromEnum c) cas
+
+select :: (Enum c, Bounded c) => (c -> SF i o) -> SF (c, i) o
+select f = proc (c, i) -> do
+  rs <- sequenceFinite f -< i
+  returnA -< rs c
+
+mkAnim :: Resources -> CharName -> SF Anim WrappedTexture
+mkAnim rs c = (arr id &&& time)
+          >>> select (timedSequence 0.1 . cycle . fmap constant . r_sprites rs c)
 

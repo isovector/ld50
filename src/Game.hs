@@ -71,13 +71,12 @@ invertCamera cam@(V2 camx camy) pos =
 
 field :: Resources -> SF FrameInfo Renderable
 field rs = proc fi@(FrameInfo controls _) -> do
-  now     <- time -< ()
-
   pos     <- charpos (r_fields rs TestField)     -< fi
-  mc_run  <- playAnimation MainCharacter Run rs  -< now
-  mc_idle <- playAnimation MainCharacter Idle rs -< now
-  clap    <- playAnimation Claptrap NoAnim rs    -< now
-  martha  <- playAnimation Martha Idle rs        -< now
+  anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
+  mc      <- mkAnim rs MainCharacter -< anim
+
+  clap    <- mkAnim rs Claptrap      -< Idle
+  martha  <- mkAnim rs Martha        -< Idle
 
   returnA -< \rs' -> do
     bgColor (V4 255 0 0 255) rs'
@@ -93,7 +92,7 @@ field rs = proc fi@(FrameInfo controls _) -> do
 
     let stretch = bool 0 (V2 2 0) $ getX (c_arrows controls) < 0
     drawSpriteStretched
-      (bool mc_idle mc_run $ clampedArrows controls /= 0)
+      mc
       (asPerCamera cam pos)
       0
       (pure False)
