@@ -66,16 +66,29 @@ data Field = Field
   { f_data :: Int -> Int -> [WrappedTexture]
   , f_tilesize :: V2 Double
   , f_walkable :: V2 Int -> Bool
+  , f_zones :: [Zone]
   }
 
+data ZoneType
+  = SendMessage Message
+  deriving (Eq, Ord, Show, Read)
+
+data Zone = Zone
+  { z_type :: ZoneType
+  , z_rect :: Rectangle Double
+  }
+  deriving Show
+
+
 instance Semigroup Field where
-  Field f1 v1 p1 <> Field f2 v2 p2
+  Field f1 v1 p1 z1 <> Field f2 v2 p2 z2
     = Field (f1 <> f2)
             (coerce ((<>) @(Max (V2 Double))) v1 v2)
             (coerce ((<>) @(V2 Int -> All)) p1 p2)
+            (z1 <> z2)
 
 instance Monoid Field where
-  mempty = Field mempty 0 $ const True
+  mempty = Field mempty 0 (const True) mempty
 
 
 
@@ -110,5 +123,6 @@ newtype Swont i o a = Swont
 data Message
   = Ok
   | Restart
+  | HitWall
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 

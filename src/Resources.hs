@@ -3,11 +3,11 @@
 module Resources where
 
 import           Control.Monad
-import           Data.Aeson
+import           Data.Aeson hiding (Object)
 import           Data.Aeson.Tiled
-import           Data.Foldable (fold)
 import qualified Data.Map as M
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, maybeToList, mapMaybe)
+import qualified Data.Text as T
 import           Data.Traversable
 import qualified Data.Vector as V
 import           GHC.Stack (HasCallStack)
@@ -15,6 +15,7 @@ import           Overlude
 import           SDL
 import qualified SDL.Image as Image
 import           System.FilePath (dropFileName, (<.>), (</>))
+import           Text.Read (readMaybe)
 
 
 pad :: Int -> Char -> String -> String
@@ -90,16 +91,17 @@ parseTilemap :: HasCallStack => Engine -> FieldName -> Tiledmap -> IO Field
 parseTilemap e f ti = do
   let renderer = e_renderer e
 
-  res <- for (tiledmapLayers ti) $ \layer -> do
-    tilesets <-
-      for (tiledmapTilesets ti) $ \ts ->
-        fmap (ts, ) . Image.loadTexture renderer
-                    $ dropFileName (fieldPath f) <> tilesetImage ts
-    let (ts, tx) = tilesets V.! 0
-        size = fmap fromIntegral
-            $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
+  tilesets <-
+    for (tiledmapTilesets ti) $ \ts ->
+      fmap (ts, ) . Image.loadTexture renderer
+                  $ dropFileName (fieldPath f) <> tilesetImage ts
 
-    pure $ Field
+  let (ts, tx) = tilesets V.! 0
+      size = fmap fromIntegral
+          $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
+
+  pure $ flip foldMap (tiledmapLayers ti) $ \layer ->
+    Field
       { f_data = \x y ->
           case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
                , layerData layer
@@ -124,17 +126,33 @@ parseTilemap e f ti = do
       , f_walkable = \(V2 x y) ->
           case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
                , layerData layer
+               , layerObjects layer
                ) of
-            (True, Just tiledata) -> do
+            (True, Just tiledata, _) -> do
               let idx = y * tiledmapWidth ti + x
               case globalToLocal ts $ tiledata V.! idx of
                 Just lid -> do
                   let props = tilesetTiles ts M.! lid
                   maybe True (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
                 Nothing -> True
+            -- Object layers don't obstruct walkability
+            (_, _, Just _) -> True
             _ -> False
+      , f_zones = mapMaybe parseZone
+                $ join
+                $ fmap V.toList
+                $ maybeToList
+                $ layerObjects layer
       }
-  pure $ fold res
+
+parseZone :: Object -> Maybe Zone
+parseZone o =
+  Zone
+    <$> readMaybe (T.unpack $ objectType o)
+    <*> pure
+          (Rectangle
+            (P $ V2 (objectX o) (objectY o))
+            (V2 (objectWidth o) (objectHeight o)))
 
 isWalkable :: Value -> Bool
 isWalkable (Bool b) = b
