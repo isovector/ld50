@@ -1,6 +1,3 @@
-{-# LANGUAGE Arrows       #-}
-{-# LANGUAGE ViewPatterns #-}
-
 module Overlude
   ( module Overlude
   , module Control.Monad

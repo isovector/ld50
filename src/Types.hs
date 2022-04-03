@@ -1,4 +1,3 @@
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE StrictData         #-}
 
 module Types
@@ -7,6 +6,7 @@ module Types
   , Word8
   ) where
 
+import Data.Generics.Labels ()
 import Control.Monad.Cont
 import Data.Word
 import FRP.Yampa
@@ -16,11 +16,13 @@ import Data.Coerce (coerce)
 import Data.Monoid (All(..))
 import Data.Semigroup (Max(..))
 import Control.Monad.Reader
+import GHC.Generics (Generic)
 
 
 data Engine = Engine
   { e_renderer :: Renderer
   }
+  deriving Generic
 
 
 data Controls = Controls
@@ -28,6 +30,7 @@ data Controls = Controls
   , c_restart :: Bool
   , c_arrows :: V2 Int
   }
+  deriving Generic
 
 
 defaultControls :: Controls
@@ -62,6 +65,7 @@ data Resources = Resources
   , r_fields :: FieldName -> Field
   , r_textures :: GameTexture -> WrappedTexture
   }
+  deriving Generic
 
 data Field = Field
   { f_data :: Int -> Int -> [WrappedTexture]
@@ -69,6 +73,7 @@ data Field = Field
   , f_walkable :: V2 Int -> Bool
   , f_zones :: [Zone]
   }
+  deriving Generic
 
 data ZoneType
   = SendMessage Message
@@ -78,7 +83,7 @@ data Zone = Zone
   { z_type :: ZoneType
   , z_rect :: Rectangle Double
   }
-  deriving Show
+  deriving (Generic, Show)
 
 
 instance Semigroup Field where
@@ -97,6 +102,7 @@ data FrameInfo = FrameInfo
   { fi_controls :: Controls
   , fi_dt :: Double
   }
+  deriving Generic
 
 type Renderable = Resources -> IO ()
 
@@ -107,6 +113,7 @@ data WrappedTexture = WrappedTexture
   , wt_size       :: V2 CInt
   , wt_origin     :: V2 CInt
   }
+  deriving Generic
 
 
 --------------------------------------------------------------------------------

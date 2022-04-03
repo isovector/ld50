@@ -36,6 +36,7 @@ executable ld50-exe
   hs-source-dirs:
       src
   default-extensions:
+      Arrows
       BangPatterns
       BinaryLiterals
       ConstrainedClassMethods
@@ -47,6 +48,8 @@ executable ld50-exe
       DeriveGeneric
       DeriveLift
       DeriveTraversable
+      DerivingStrategies
+      DerivingVia
       DoAndIfThenElse
       EmptyCase
       EmptyDataDecls
@@ -62,13 +65,14 @@ executable ld50-exe
       ImplicitPrelude
       ImportQualifiedPost
       InstanceSigs
-      LambdaCase
       KindSignatures
+      LambdaCase
       MonomorphismRestriction
       MultiParamTypeClasses
       NamedFieldPuns
       NamedWildCards
       NumericUnderscores
+      OverloadedLabels
       PatternGuards
       PolyKinds
       PostfixOperators
@@ -83,6 +87,7 @@ executable ld50-exe
       TypeApplications
       TypeOperators
       TypeSynonymInstances
+      ViewPatterns
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       Yampa
@@ -91,6 +96,8 @@ executable ld50-exe
     , base >=4.7 && <5
     , containers
     , filepath
+    , generic-lens
+    , microlens
     , mtl
     , random
     , sdl2

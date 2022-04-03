@@ -1,9 +1,8 @@
-{-# LANGUAGE Arrows            #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module Game where
 
+import qualified Lens.Micro as L
 import Overlude hiding (now)
 import SDL hiding (get, Event, time)
 import Data.Foldable (for_)
@@ -72,8 +71,8 @@ invertCamera cam@(V2 camx camy) pos =
 
 
 field :: Resources -> SF (Bool, FrameInfo) Renderable
-field rs = proc (root, fi@(FrameInfo controls _)) -> do
-  pos     <- charpos (r_fields rs TestField)     -< fi { fi_controls = bool defaultControls controls root }
+field rs = proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi@(FrameInfo controls _)) -> do
+  pos     <- charpos (r_fields rs TestField) -< fi
   anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
   mc      <- mkAnim rs MainCharacter -< anim
 
