@@ -12,7 +12,6 @@ import           Control.Monad.Cont
 import           Control.Monad.Reader
 import           Controls
 import           Data.Foldable (for_, traverse_)
-import           Data.Functor ((<&>))
 import           Data.Point2
 import qualified Data.Text as T
 import           Data.Void (Void, absurd)
@@ -165,6 +164,12 @@ rectContains (Rectangle (P (V2 x y)) (V2 w h)) (V2 px py) = and
   ]
 
 
+evolve :: s -> (s -> Swont i o s) -> Swont i o b
+evolve s0 f = do
+  s <- f s0
+  evolve s f
+
+
 ------------------------------------------------------------------------------
 -- |  Lift a function over the FSM, but unset the root flag when doing so.
 localFSM :: (Embedding' i o -> Embedding' i o) -> FSM i o -> FSM i o
@@ -180,15 +185,9 @@ composite f (Compositing m) = Compositing $ local (localFSM $ compEmbed $ embedA
 (*>.) = liftA2 (*>)
 
 
-sequenceFinite :: (Enum c, Bounded c, Applicative f) => (c -> f a) -> f (c -> a)
-sequenceFinite f =
-  let elems = [minBound .. maxBound]
-      fas = fmap (zip elems) $sequenceA $ fmap f elems
-   in fas <&> \cas c -> snd $ head $ drop (fromEnum c) cas
-
 select :: (Enum c, Bounded c) => (c -> SF i o) -> SF (c, i) o
 select f = proc (c, i) -> do
-  rs <- sequenceFinite f -< i
+  rs <- parB f -< i
   returnA -< rs c
 
 mkAnim :: Resources -> CharName -> SF Anim WrappedTexture

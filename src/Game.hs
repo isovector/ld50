@@ -2,12 +2,12 @@
 
 module Game where
 
+import           Data.Bool (bool)
+import           Data.Foldable (for_)
+import           Data.Monoid
 import qualified Lens.Micro as L
-import Overlude hiding (now)
-import SDL hiding (get, Event, time)
-import Data.Foldable (for_)
-import Data.Bool (bool)
-import Data.Void (absurd)
+import           Overlude hiding (now)
+import           SDL hiding (get, Event, time)
 
 
 bgColor :: V4 Word8 -> Renderable
@@ -20,8 +20,8 @@ clampedArrows :: Controls -> V2 Int
 clampedArrows = modifyX (clamp (0, 1)) . c_arrows
 
 
-charpos :: Field -> SF FrameInfo (V2 Double)
-charpos f = loopPre (V2 40 60) $ proc (FrameInfo controls dt, pos) -> do
+charpos :: Field -> V2 Double -> SF FrameInfo (V2 Double)
+charpos f p0 = loopPre p0 $ proc (FrameInfo controls dt, pos) -> do
   let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ clampedArrows controls
   returnA -< dup $
     let pos' = pos + dpos
@@ -40,11 +40,26 @@ black = V3 0 0 0
 
 game :: Resources -> SF FrameInfo Renderable
 game rs
-  = runCompositing absurd $ do
-      composite (*>. drawText 4 blue "overlay" (V2 10 10)) $
-        composite (drawText 12 black "underlay" (V2 10 80) *>.) $
-          stdWaitFor (== Restart) (withRoot $ liftSwont $ field rs)
-      withRoot $ liftSwont $ field rs
+  = runCompositing (error "fin") $ do
+      liftCompositing $ evolve (V2 20 20) $ \p0 ->
+        let f = r_fields rs TestField in
+        dswont $ proc fi -> do
+          pos <- charpos f p0 -< fi
+          t <- mkAnim rs MainCharacter -< Run
+          evs <- traverse zoneHandler $ f_zones f -< pos
+
+          returnA -<
+            ( const $ do
+                drawTiles f pos rs
+                drawSprite t (asPerCamera pos pos) 0 (pure False) rs
+            , event noEvent (maybe noEvent pure . getLast . foldMap (Last . teleporter pos)) $ fmap join $ sequenceA evs
+            )
+
+
+teleporter :: V2 Double -> Message -> Maybe (V2 Double)
+teleporter _ Ok = Nothing
+teleporter _ Restart = Nothing
+teleporter v HitWall = Just (v + V2 40 0)
 
 
 
@@ -70,24 +85,28 @@ invertCamera cam@(V2 camx camy) pos =
                  (clamp (0, getY halfScreen + 4)  camy)
 
 
-field :: Resources -> SF (Bool, FrameInfo) Renderable
-field rs = proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi@(FrameInfo controls _)) -> do
-  pos     <- charpos (r_fields rs TestField) -< fi
+zoneHandler :: Zone -> SF (V2 Double) (Event [Message])
+zoneHandler z@(Zone { z_type = SendMessage msg }) =
+  proc pos -> do
+    ev <- edgeTag [msg] -< rectContains (z_rect z) pos
+    returnA -< ev
+
+
+field :: Resources -> Swont (Bool, FrameInfo) Renderable [Message]
+field rs = let f = r_fields rs TestField in
+  swont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi@(FrameInfo controls _)) -> do
+  pos     <- charpos (r_fields rs TestField) (V2 40 40) -< fi
   anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
   mc      <- mkAnim rs MainCharacter -< anim
 
   clap    <- mkAnim rs Claptrap      -< Idle
   martha  <- mkAnim rs Martha        -< Idle
 
-  returnA -< \rs' -> do
-    bgColor (V4 255 0 0 255) rs'
-    let f = r_fields rs TestField
-        cam = pos
+  msgs <- traverse zoneHandler (f_zones f) -< pos
 
-    for_ (f_zones f) $ \zone -> do
-      if rectContains (z_rect zone) pos
-         then putStrLn $ show $ z_type zone
-         else pure ()
+  returnA -< (, fmap join $ sequenceA msgs) $ \rs' -> do
+    bgColor (V4 255 0 0 255) rs'
+    let cam = pos
 
     drawTiles f cam rs'
 
