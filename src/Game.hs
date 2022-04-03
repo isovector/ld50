@@ -55,7 +55,7 @@ runningGame rs = evolve (V2 20 20) $ \p0 ->
       ( const $ do
           drawTiles f pos rs
           drawSprite t (asPerCamera pos pos) 0 (pure False) rs
-      , event noEvent (maybe noEvent pure) $ fmap (teleporter pos) $ mergeEvents evs
+      , mapFilterE (teleporter pos) $ mergeEvents evs
       )
 
 
