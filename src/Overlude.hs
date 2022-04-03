@@ -164,10 +164,11 @@ rectContains (Rectangle (P (V2 x y)) (V2 w h)) (V2 px py) = and
   ]
 
 
-evolve :: s -> (s -> Swont i o s) -> Swont i o b
+evolve :: s -> (s -> Swont i o (s, Maybe e)) -> Swont i o (s, e)
 evolve s0 f = do
-  s <- f s0
-  evolve s f
+  f s0 >>= \case
+    (s, Just e) -> pure (s, e)
+    (s, Nothing) -> evolve s f
 
 
 ------------------------------------------------------------------------------

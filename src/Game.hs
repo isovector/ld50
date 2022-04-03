@@ -4,7 +4,6 @@ module Game where
 
 import           Data.Bool (bool)
 import           Data.Foldable (for_)
-import           Data.Monoid
 import qualified Lens.Micro as L
 import           Overlude hiding (now)
 import           SDL hiding (get, Event, time)
@@ -39,27 +38,31 @@ black :: V3 Word8
 black = V3 0 0 0
 
 game :: Resources -> SF FrameInfo Renderable
-game rs
-  = runCompositing (error "fin") $ do
-      liftCompositing $ evolve (V2 20 20) $ \p0 ->
-        let f = r_fields rs TestField in
-        dswont $ proc fi -> do
-          pos <- charpos f p0 -< fi
-          t <- mkAnim rs MainCharacter -< Run
-          evs <- traverse zoneHandler $ f_zones f -< pos
+game rs =
+  runCompositing (error "fin") $ do
+    withRoot $ runningGame rs
 
-          returnA -<
-            ( const $ do
-                drawTiles f pos rs
-                drawSprite t (asPerCamera pos pos) 0 (pure False) rs
-            , event noEvent (maybe noEvent pure . getLast . foldMap (Last . teleporter pos)) $ fmap join $ sequenceA evs
-            )
+runningGame :: Resources -> Swont (Bool, FrameInfo) Renderable (V2 Double, Message)
+runningGame rs = evolve (V2 20 20) $ \p0 ->
+  let f = r_fields rs TestField in
+  dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
+    pos <- charpos f p0 -< fi
+    anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< fi_controls fi
+    t <- mkAnim rs MainCharacter -< anim
+    evs <- traverse zoneHandler $ f_zones f -< pos
+
+    returnA -<
+      ( const $ do
+          drawTiles f pos rs
+          drawSprite t (asPerCamera pos pos) 0 (pure False) rs
+      , event noEvent (maybe noEvent pure) $ fmap (teleporter pos) $ mergeEvents evs
+      )
 
 
-teleporter :: V2 Double -> Message -> Maybe (V2 Double)
-teleporter _ Ok = Nothing
-teleporter _ Restart = Nothing
-teleporter v HitWall = Just (v + V2 40 0)
+teleporter :: V2 Double -> Message -> Maybe (V2 Double, Maybe Message)
+teleporter v HitWall = Just (v + V2 40 0, Nothing)
+teleporter v Quit = Just (v, Just Quit)
+teleporter _ _ = Nothing
 
 
 
@@ -85,10 +88,10 @@ invertCamera cam@(V2 camx camy) pos =
                  (clamp (0, getY halfScreen + 4)  camy)
 
 
-zoneHandler :: Zone -> SF (V2 Double) (Event [Message])
+zoneHandler :: Zone -> SF (V2 Double) (Event Message)
 zoneHandler z@(Zone { z_type = SendMessage msg }) =
   proc pos -> do
-    ev <- edgeTag [msg] -< rectContains (z_rect z) pos
+    ev <- edgeTag msg -< rectContains (z_rect z) pos
     returnA -< ev
 
 
@@ -104,7 +107,7 @@ field rs = let f = r_fields rs TestField in
 
   msgs <- traverse zoneHandler (f_zones f) -< pos
 
-  returnA -< (, fmap join $ sequenceA msgs) $ \rs' -> do
+  returnA -< (, sequenceA msgs) $ \rs' -> do
     bgColor (V4 255 0 0 255) rs'
     let cam = pos
 

@@ -151,6 +151,7 @@ type Compositing' i o = Compositing i o i o
 data Message
   = Ok
   | Restart
+  | Quit
   | HitWall
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 

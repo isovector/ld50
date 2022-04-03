@@ -41,6 +41,17 @@
                  "width":16,
                  "x":112,
                  "y":48
+                }, 
+                {
+                 "height":16,
+                 "id":3,
+                 "name":"",
+                 "rotation":0,
+                 "type":"SendMessage Quit",
+                 "visible":true,
+                 "width":224,
+                 "x":160,
+                 "y":160
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -49,7 +60,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":3,
+ "nextobjectid":4,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.8.0",
