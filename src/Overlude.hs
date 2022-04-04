@@ -18,6 +18,7 @@ import           Foreign.C
 import           SDL hiding (time, Event)
 import           Types hiding (next)
 import Data.List (genericLength)
+import SDL.Mixer
 
 bgColor :: V4 Word8 -> Renderable
 bgColor col rs = do
@@ -269,4 +270,12 @@ fadeTo color = fade (fadeColors color)
 
 fadeFrom :: V4 Word8 -> Double -> SF a Renderable
 fadeFrom color = fade (reverse $ fadeColors color)
+
+playSound :: Sound -> Resources -> IO ()
+playSound s r = do
+  halt 0
+  void $ playOn 0 Once (r_sounds r s)
+
+soundTrigger :: Sound -> SF (Event a) (Resources -> IO ())
+soundTrigger s = arr $ event (const $ pure  ()) $ const $ playSound s
 

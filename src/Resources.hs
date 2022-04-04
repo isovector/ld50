@@ -16,6 +16,7 @@ import           SDL
 import qualified SDL.Image as Image
 import           System.FilePath (dropFileName, (<.>), (</>))
 import           Text.Read (readMaybe)
+import qualified SDL.Mixer as Mixer
 
 
 pad :: Int -> Char -> String -> String
@@ -42,6 +43,15 @@ setGroundOrigin wt =
    in wt
         { wt_origin = V2 (x `div` 2) y
         }
+
+
+soundName :: Sound -> String
+soundName Hit = "hit"
+soundName MCSay = "mc"
+soundName MarthaSay = "martha"
+
+soundPath :: Sound -> FilePath
+soundPath s = "./resources/sounds" </> soundName s <.> "wav"
 
 
 frameCounts :: CharName -> Anim -> Int
@@ -217,6 +227,11 @@ loadResources e = do
       let fp = texturePath tx
       fmap (tx, ) $ wrapTexture =<< Image.loadTexture renderer fp
 
+  sounds <- fmap M.fromList $
+    for [minBound @Sound .. maxBound] $ \tx-> do
+      let fp = soundPath tx
+      fmap (tx, ) $ Mixer.load fp
+
 
   pure $ Resources
     { r_engine = e
@@ -226,6 +241,8 @@ loadResources e = do
                . flip M.lookup fields
     , r_textures = fromMaybe (error "missing texture")
                  . flip M.lookup textures
+    , r_sounds = fromMaybe (error "missing sound")
+                 . flip M.lookup sounds
     }
 
 

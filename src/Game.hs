@@ -6,7 +6,7 @@ import           Data.Bool (bool)
 import           Data.Foldable (for_, asum)
 import           GHC.Generics (Generic)
 import qualified Lens.Micro as L
-import           Overlude hiding (now)
+import           Overlude
 import           SDL hiding (delay, get, Event, time)
 import Prelude hiding (interact)
 
@@ -44,6 +44,7 @@ game rs =
 
 dialogMsg :: CharName -> String -> Compositing' FrameInfo Renderable ()
 dialogMsg who say = liftCompositing $ do
+  momentary $ maybe (const $ pure ()) playSound $ charVoice who
   swont $ proc fi -> do
     ok <- interactionEvent -< fi_controls fi
     returnA -<
@@ -55,6 +56,13 @@ dialogMsg who say = liftCompositing $ do
           drawText 6 white say (V2 42 110) rs
       , ok
       )
+
+momentary :: (Resources -> IO ()) -> Swont i (Resources -> IO ()) ()
+momentary what = do
+  -- TODO(sandy): not sure why this is necessary, but IO actions dont seem to
+  -- happen otherwise
+  swont $ after 0.001 () >>> (constant (const $ pure ()) &&& arr id)
+  dswont $ constant what &&& now ()
 
 
 runningGame :: Resources -> Compositing' FrameInfo Renderable World
@@ -103,10 +111,12 @@ runningState rs = \(World fname p0) ->
     peeps <- traverse (mkAnim rs . a_name) (f_actors f) -< Idle
     evs   <- traverse zoneHandler $ f_zones f -< pos
     interact <- interactionEvent -< fi_controls fi
+    to_play <- soundTrigger Hit -< interact
 
     returnA -<
       ( const $ do
           let cam = pos
+          -- to_play rs
 
           drawTiles f pos rs
 
@@ -281,4 +291,9 @@ portrait rs c =
 drawPortait :: CharName -> V2 Double -> Renderable
 drawPortait c pos rs =
   drawSpriteStretched (portrait rs c) pos 0 (pure False) 3 rs
+
+charVoice :: CharName -> Maybe Sound
+charVoice MainCharacter = Just MCSay
+charVoice Martha = Just MarthaSay
+charVoice Claptrap = Nothing
 

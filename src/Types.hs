@@ -24,6 +24,7 @@ import GHC.Generics (Generic)
 import Debug.Trace (traceShowId, traceM)
 import Data.Functor ((<&>))
 import Control.Applicative
+import SDL.Mixer (Chunk)
 
 
 data Engine = Engine
@@ -73,6 +74,7 @@ data Resources = Resources
   , r_sprites :: CharName -> Anim -> [WrappedTexture]
   , r_fields :: FieldName -> Field
   , r_textures :: GameTexture -> WrappedTexture
+  , r_sounds :: Sound -> Chunk
   }
   deriving Generic
 
@@ -88,6 +90,13 @@ data Field = Field
 
 data Facing = FacingLeft | FacingRight
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data Sound
+  = Hit
+  | MCSay
+  | MarthaSay
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
 
 data Actor = Actor
   { a_name        :: CharName

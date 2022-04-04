@@ -15,6 +15,7 @@ import Resources (loadResources)
 import SDL hiding (copy, Stereo)
 import System.Exit
 import Controls (parseControls)
+import SDL.Mixer hiding (quit)
 
 
 screenScale :: V2 CFloat
@@ -34,6 +35,14 @@ main = do
   rendererScale renderer $= screenScale
   rendererDrawBlendMode renderer $= BlendAlphaBlend
   cursorVisible $= False
+
+  openAudio
+    (Audio
+      { audioFrequency = 44100
+      , audioFormat = FormatS16_Sys
+      , audioOutput = Stereo
+      })
+      1024
 
   let engine = Engine
         { e_renderer = renderer
