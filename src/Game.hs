@@ -7,13 +7,8 @@ import           Data.Foldable (for_)
 import qualified Lens.Micro as L
 import           Overlude hiding (now)
 import           SDL hiding (get, Event, time)
+import Controls (waitControls)
 
-
-bgColor :: V4 Word8 -> Renderable
-bgColor col rs = do
-  let renderer = e_renderer $ r_engine rs
-  rendererDrawColor renderer $= col
-  clear renderer
 
 clampedArrows :: Controls -> V2 Int
 clampedArrows = modifyX (clamp (0, 1)) . c_arrows
@@ -40,7 +35,18 @@ black = V3 0 0 0
 game :: Resources -> SF FrameInfo Renderable
 game rs =
   runCompositing (error "fin") $ do
-    withRoot $ runningGame rs
+    -- gameDfa
+    pushDialog (withRoot $ runningGame rs)
+      $ liftCompositing $ swont $ proc fi -> do
+          msgs <- waitControls -< fi_controls fi
+          returnA -<
+            ( const $ do
+                let renderer = e_renderer $ r_engine rs
+                rendererDrawColor renderer $= pure 255
+                fillRect renderer $ Just $ Rectangle (P $ pure 20) (pure 20)
+            , bool noEvent (pure ()) $ any (== Ok) msgs
+            )
+
 
 runningGame :: Resources -> Swont (Bool, FrameInfo) Renderable (V2 Double, Message)
 runningGame rs = evolve (V2 20 20) $ \p0 ->
@@ -58,11 +64,19 @@ runningGame rs = evolve (V2 20 20) $ \p0 ->
       , mapFilterE (teleporter pos) $ mergeEvents evs
       )
 
+pushDialog :: Compositing' i Renderable b -> Compositing' i Renderable a -> Compositing' i Renderable b
+pushDialog under above = do
+  fsm <- ask
+  _ <- push (*>.) (unCompositing (localFSM id fsm) (error "sf ended during dialog") under) above
+  under
+
 
 teleporter :: V2 Double -> Message -> Maybe (V2 Double, Maybe Message)
 teleporter v HitWall = Just (v + V2 40 0, Nothing)
 teleporter v Quit = Just (v, Just Quit)
 teleporter _ _ = Nothing
+
+
 
 
 

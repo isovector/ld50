@@ -122,7 +122,7 @@ data WrappedTexture = WrappedTexture
 -- you can embed one SF to run inside of another, eg, if you are building
 -- a state machine via @Swont@.
 newtype Embedding a b d e = Embedding
-  { getEmbedding :: forall c . SF a (b, Event c) -> SF d (e, Event c)
+  { getEmbedding :: SF a b -> SF d e
   }
   deriving (Functor)
 
@@ -143,7 +143,7 @@ data FSM i o = FSM
 -- |
 newtype Compositing d e i o a = Compositing
   { getCompositing :: ReaderT (FSM d e) (Swont i o) a
-  } deriving (Functor, Applicative, Monad)
+  } deriving (Functor, Applicative, Monad, MonadReader (FSM d e))
 
 type Compositing' i o = Compositing i o i o
 

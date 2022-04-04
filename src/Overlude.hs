@@ -4,6 +4,8 @@ module Overlude
   , module Types
   , module Data.Point2
   , T.Text
+  , ask
+  , asks
   ) where
 
 import           Control.Applicative (liftA2)
@@ -14,37 +16,56 @@ import           Controls
 import           Data.Foldable (for_, traverse_)
 import           Data.Point2
 import qualified Data.Text as T
-import           Data.Void (Void, absurd)
 import           Foreign.C
 import           SDL hiding (time, Event)
 import           Types
+import Data.Void
+
+bgColor :: V4 Word8 -> Renderable
+bgColor col rs = do
+  let renderer = e_renderer $ r_engine rs
+  rendererDrawColor renderer $= col
+  clear renderer
 
 
 compEmbed :: Embedding a' b' d e -> Embedding a b a' b' -> Embedding a b d e
 compEmbed (Embedding g) (Embedding f) = Embedding (g . f)
 
+liftEmbed :: SF i o -> Embedding a i a o
+liftEmbed io = Embedding $ \ai -> ai >>> io
+
+liftInpEmbed :: SF i o -> Embedding o b i b
+liftInpEmbed io = Embedding $ \b -> io >>> b
+
 
 embedArr :: (b -> e) -> Embedding d b d e
-embedArr f = Embedding (>>> first (arr f))
+embedArr = liftEmbed . arr
 
 
 embedInpArr :: (d -> a) -> Embedding a e d e
-embedInpArr f = Embedding (arr f >>>)
+embedInpArr = liftInpEmbed . arr
 
 
 runSwont :: Swont i o a -> (a -> SF i o) -> SF i o
 runSwont x final = runCont (runSwont' x) final
 
 unCompositing :: FSM d e -> (a -> SF i o) -> Compositing d e i o a -> SF i o
-unCompositing fsm g f
+unCompositing fsm g
   = flip runSwont g
-  $ flip runReaderT fsm $ getCompositing f
+  . flip runReaderT fsm
+  . getCompositing
 
-runCompositing :: (a -> SF i o) -> Compositing d e i o a -> SF i o
+invMapCont :: (r -> r') -> (r' -> r) -> Cont r a -> Cont r' a
+invMapCont to from ct = cont $ \k -> to $ runCont ct $ from . k
+
+
+runCompositing :: (a -> SF i Renderable) -> Compositing' i Renderable a -> SF i Renderable
 runCompositing = unCompositing (FSM (Embedding id) True)
 
-liftCompositing :: Swont i o a -> Compositing d e i o a
-liftCompositing = Compositing . ReaderT . const
+liftCompositing :: Swont i o a -> Compositing' i o a
+liftCompositing s = Compositing $ do
+  Embedding embed' <- asks fsm_embedding
+  lift $ Swont $ cont $ \k -> embed' $ runSwont s k
 
 liftSwont :: SF i o -> Swont i o b
 liftSwont = swont . (&&& never)
@@ -57,19 +78,19 @@ withRoot m = Compositing $ ReaderT $ \fsm ->
 over :: Time -> SF i o -> Compositing' i o ()
 over interval sf = Compositing $ do
   Embedding embed' <- asks fsm_embedding
-  lift . swont $ embed' $ sf &&& (after interval () >>> iPre NoEvent)
+  lift $ swont $ embed' sf &&& (after interval () >>> iPre NoEvent)
 
 stdWaitFor :: (Message -> Bool) -> Compositing' FrameInfo o Void -> Compositing' FrameInfo o ()
 stdWaitFor b sf = Compositing $ do
   fsm <- ask
   let Embedding embed' = fsm_embedding fsm
-  lift . swont $ embed' $ waitForMessage b $ unCompositing fsm absurd sf
+  lift . swont $ waitForMessage b $ embed' $ unCompositing fsm absurd sf
 
 
 stdWait :: o -> Compositing' FrameInfo o ()
 stdWait sf = Compositing $ do
   Embedding embed' <- asks fsm_embedding
-  lift . swont $ embed' $ waitForOk $ constant sf
+  lift . swont $ waitForOk $ embed' $ constant sf
 
 waitForMessage :: (Message -> Bool) -> SF FrameInfo o -> SF FrameInfo (o, Event ())
 waitForMessage b sf = sf &&& (arr fi_controls >>> waitControls >>> arr (any b) >>> edge)
@@ -181,6 +202,20 @@ composite
     -> Compositing d e i o a
     -> Compositing d e i o a
 composite f (Compositing m) = Compositing $ local (localFSM $ compEmbed $ embedArr f) m
+
+
+push
+    :: (e -> e -> e)
+    -> SF d e
+    -> Compositing d e i o a
+    -> Compositing d e i o a
+push combine g above =
+  Compositing $ flip local (getCompositing above) $ localFSM $ compEmbed $
+    Embedding $ \f ->
+      proc a -> do
+        e1 <- f -< a
+        e2 <- g -< a
+        returnA -< combine e2 e1
 
 (*>.) :: Applicative m => (a -> m b) -> (a -> m c) -> a -> m c
 (*>.) = liftA2 (*>)
