@@ -18,6 +18,7 @@ import Resources (loadResources)
 import SDL hiding (copy, Stereo)
 import SDL.Mixer hiding (quit)
 import System.Exit
+import System.FilePath ((</>))
 
 
 
@@ -30,9 +31,10 @@ physicalScreen = V2 160 144
 screenSize :: V2 CInt
 screenSize = fmap round $ (*) <$> screenScale <*> physicalScreen
 
-makeShader :: ShaderType -> String -> IO Shader
-makeShader ty src = do
+makeShader :: ShaderType -> FilePath -> IO Shader
+makeShader ty fp = do
   shader <- createShader ty
+  src <- readFile $ "resources/shaders" </> fp
   shaderSourceBS shader $= fromString src
   compileShader shader
   shaderInfoLog shader >>= \case
@@ -72,14 +74,8 @@ main = do
   buffer <- createTexture renderer RGB888 TextureAccessTarget screenSize
 
   program <- createProgram
-  attachShader program =<<
-    makeShader
-      VertexShader
-      "varying vec4 v_color; varying vec2 v_texCoord; void main() { gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex; v_color = gl_Color; v_texCoord = vec2(gl_MultiTexCoord0); }"
-  attachShader program =<<
-    makeShader
-      FragmentShader
-      "varying vec2 v_texCoord; varying vec4 v_color; uniform sampler2D tex0; void main() { gl_FragColor = texture2D(tex0, v_texCoord.xy) * vec4(1, 0, 1, 0.5); }"
+  attachShader program =<< makeShader VertexShader   "std.vertex"
+  attachShader program =<< makeShader FragmentShader "test.fragment"
 
   validateProgram program
   linkProgram program
