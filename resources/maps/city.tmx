@@ -4339,6 +4339,7 @@
   <object id="4" name="Martha" x="136" y="136">
    <properties>
     <property name="facing" value="FacingLeft"/>
+    <property name="interaction" value="PortalWarning"/>
    </properties>
    <point/>
   </object>

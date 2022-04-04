@@ -52,6 +52,11 @@
                          "name":"facing",
                          "type":"string",
                          "value":"FacingLeft"
+                        }, 
+                        {
+                         "name":"interaction",
+                         "type":"string",
+                         "value":"PortalWarning"
                         }],
                  "rotation":0,
                  "type":"",

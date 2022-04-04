@@ -90,9 +90,10 @@ data Facing = FacingLeft | FacingRight
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Actor = Actor
-  { a_name   :: CharName
-  , a_pos    :: V2 Double
-  , a_facing :: Facing
+  { a_name        :: CharName
+  , a_pos         :: V2 Double
+  , a_facing      :: Facing
+  , a_interaction :: Maybe ActorInteraction
   }
   deriving (Show, Generic)
 
@@ -177,8 +178,12 @@ data Message
 
 data WorldInteraction
   = Goto FieldName (V2 Double)
-  | TestInteraction
   deriving (Eq, Ord, Show, Read)
+
+data ActorInteraction
+  = PortalWarning
+  deriving (Eq, Ord, Show, Read)
+
 
 data Switch i o a
   = Push (a -> Compositing' i o (a, Switch i o a))

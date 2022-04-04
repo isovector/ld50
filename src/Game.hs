@@ -116,17 +116,20 @@ runningState rs = \(World fname p0) ->
               rs
 
           drawSprite t (asPerCamera f pos pos) 0 (V2 dir False) rs
-      , mapFilterE (teleporter rs $ World fname pos)
-          $ mergeEvents
-          $ mappend evs
-          $ pure
-          $ do
+      , let w' = World fname pos in
+        mergeEvents
+          [ mapFilterE (teleporter rs w') $ mergeEvents evs
+          , mapFilterE (runInteraction w') $ do
               () <- interact
               asum $ do
                 actor <- f_actors f
-                if norm (a_pos actor - pos) <= 20
-                   then pure $ Event TestInteraction
-                   else empty
+                case a_interaction actor of
+                  Just i ->
+                    if norm (a_pos actor - pos) <= 20
+                      then pure $ Event i
+                      else empty
+                  Nothing -> empty
+          ]
       )
 
 teleporter
@@ -135,13 +138,19 @@ teleporter
     -> WorldInteraction
     -> Maybe (World, Switch FrameInfo Renderable World)
 -- teleporter rs w HitWall = Just (L.over #w_pos (+ V2 40 0) w, Bind $ runningState rs)
-teleporter _ w TestInteraction = Just $ (w,) $ Push $ const $ do
-  dialogMsg Martha "Beware the portal!"
-  dialogMsg MainCharacter "Odd..."
-  pure (w, Done w)
+-- teleporter _ w TestInteraction =
 teleporter rs _ (Goto f v) = Just (World f v, Bind $ runningState rs)
 -- teleporter _ _ _ = Nothing
 
+runInteraction
+    :: World
+    -> ActorInteraction
+    -> Maybe (World, Switch FrameInfo Renderable World)
+runInteraction w PortalWarning =
+  Just $ (w,) $ Push $ const $ do
+    dialogMsg Martha "Beware the portal!"
+    dialogMsg MainCharacter "Odd..."
+    pure (w, Done w)
 
 
 

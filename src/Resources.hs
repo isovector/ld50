@@ -165,6 +165,7 @@ parseActors o =
     <$> readMaybe (T.unpack $ objectName o)
     <*> pure (V2 (objectX o) (objectY o))
     <*> (parseProperty (objectProperties o) "facing" <|> pure FacingRight)
+    <*> pure (parseProperty (objectProperties o) "interaction")
 
 parseProperty :: Read a => Map Text Property -> Text -> Maybe a
 parseProperty props name = M.lookup name props >>= getString . propertyValue >>= readMaybe
