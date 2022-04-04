@@ -55,7 +55,7 @@ dialogMsg = liftCompositing $ do
 
 
 runningGame :: Resources -> Compositing' FrameInfo Renderable World
-runningGame rs = evolveC (World TestField $ V2 20 20) $ runningState rs
+runningGame rs = evolveC (World City $ V2 20 20) $ runningState rs
 
 setForce :: Field -> V2 Int -> V2 Int
 setForce f (V2 x y) =

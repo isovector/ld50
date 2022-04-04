@@ -52,6 +52,7 @@ data Anim
 data FieldName
   = TestField
   | Another
+  | City
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data GameTexture

@@ -64,6 +64,7 @@ animName Run    = "run"
 fieldName :: FieldName -> String
 fieldName TestField = "test"
 fieldName Another = "another"
+fieldName City = "city"
 
 textureName :: GameTexture -> String
 textureName Darkness = "darkness"
