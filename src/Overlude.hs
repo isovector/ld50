@@ -16,10 +16,10 @@ import           Controls
 import           Data.Foldable (for_, traverse_)
 import           Data.Point2
 import qualified Data.Text as T
+import           Data.Void
 import           Foreign.C
 import           SDL hiding (time, Event)
 import           Types hiding (next)
-import Data.Void
 
 bgColor :: V4 Word8 -> Renderable
 bgColor col rs = do
@@ -146,21 +146,24 @@ frameSpeed :: CharName -> Anim -> Double
 frameSpeed _ Idle = 0.5
 frameSpeed _ _ = 0.1
 
-drawSpriteStretched :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> V2 Int -> Renderable
-drawSpriteStretched wt pos theta flips stretch rs = do
+drawSpriteStretched :: WrappedTexture -> V2 Double -> Double -> V2 Bool -> V2 Double -> Renderable
+drawSpriteStretched wt pos theta flips stretched rs = do
   let renderer = e_renderer $ r_engine rs
-      stretched = fmap fromIntegral stretch
   copyEx
     renderer
     (getTexture wt)
     (wt_sourceRect wt)
-    (Just $ Rectangle (P $ fmap round pos - wt_origin wt - stretched) $ wt_size wt + stretched)
+    (Just $ fmap round
+          $ Rectangle (P $ pos - (fmap fromIntegral (wt_origin wt) * stretched))
+          $ fmap fromIntegral (wt_size wt) * stretched)
     (CDouble theta)
-    (Just $ P $ wt_origin wt)
+    (Just $ fmap round
+          $ P
+          $ fmap fromIntegral (wt_origin wt) * stretched)
     flips
 
-drawSprite :: RealFloat a => WrappedTexture -> V2 a -> Double -> V2 Bool -> Renderable
-drawSprite wt pos theta flips = drawSpriteStretched wt pos theta flips 0
+drawSprite :: WrappedTexture -> V2 Double -> Double -> V2 Bool -> Renderable
+drawSprite wt pos theta flips = drawSpriteStretched wt pos theta flips 1
 
 clamp :: Ord a => (a, a) -> a -> a
 clamp (lo, hi) a = min hi $ max lo a

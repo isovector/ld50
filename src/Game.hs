@@ -38,18 +38,22 @@ data World = World
 
 game :: Resources -> SF FrameInfo Renderable
 game rs =
-  runCompositing (error "fin") $ runningGame rs
+  runCompositing (error "fin") $ do
+    dialogMsg Martha "Sandy is awesome"
+    runningGame rs
 
 
-dialogMsg :: Compositing' FrameInfo Renderable ()
-dialogMsg = liftCompositing $ do
+dialogMsg :: CharName -> String -> Compositing' FrameInfo Renderable ()
+dialogMsg who say = liftCompositing $ do
   swont $ proc fi -> do
     msgs <- waitControls -< fi_controls fi
     returnA -<
       ( \rs -> do
           let renderer = e_renderer $ r_engine rs
-          rendererDrawColor renderer $= pure 255
-          fillRect renderer $ Just $ Rectangle (P $ pure 20) (pure 20)
+          rendererDrawColor renderer $= V4 0 0 0 96
+          fillRect renderer $ Just $ Rectangle (P $ V2 0 95) $ fmap round screen
+          drawPortait who (V2 2 100) rs
+          drawText 6 white say (V2 42 110) rs
       , bool noEvent (pure ()) $ any (== Ok) msgs
       )
 
@@ -103,7 +107,7 @@ teleporter
     -> Message
     -> Maybe (World, Switch FrameInfo Renderable World)
 teleporter rs w HitWall = Just (L.over #w_pos (+ V2 40 0) w, Bind $ runningState rs)
-teleporter _ w Quit = Just (w, Push $ const $ dialogMsg >> pure (w, Done w) )
+teleporter _ w Quit = Just (w, Push $ const $ dialogMsg MainCharacter "Odd..." >> pure (w, Done w) )
 teleporter rs _ (Goto f v) = Just (World f v, Bind $ runningState rs)
 teleporter _ _ _ = Nothing
 
@@ -218,4 +222,17 @@ gameDfa = do
     bgColor (V4 50 0 50 255) rs
     drawText 8 white "-INTO DARKNESS-" (V2 20 20) rs
     drawText 8 white "by Sandy Maguire" (V2 15 120) rs
+
+
+portrait :: Resources -> CharName -> WrappedTexture
+portrait rs c =
+  (head $ r_sprites rs c NoAnim)
+    { wt_sourceRect = Just (Rectangle (P $ V2 2 6) 14)
+    , wt_size = 14
+    , wt_origin = 0
+    }
+
+drawPortait :: CharName -> V2 Double -> Renderable
+drawPortait c pos rs =
+  drawSpriteStretched (portrait rs c) pos 0 (pure False) 3 rs
 
