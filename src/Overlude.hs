@@ -12,11 +12,9 @@ import           Control.Applicative (liftA2)
 import           Control.Monad
 import           Control.Monad.Cont
 import           Control.Monad.Reader
-import           Controls
 import           Data.Foldable (for_, traverse_)
 import           Data.Point2
 import qualified Data.Text as T
-import           Data.Void
 import           Foreign.C
 import           SDL hiding (time, Event)
 import           Types hiding (next)
@@ -81,26 +79,26 @@ over interval sf = Compositing $ do
   Embedding embed' <- asks fsm_embedding
   lift $ swont $ embed' sf &&& (after interval () >>> iPre NoEvent)
 
-stdWaitFor :: (Message -> Bool) -> Compositing' FrameInfo o Void -> Compositing' FrameInfo o ()
-stdWaitFor b sf = Compositing $ do
-  fsm <- ask
-  let Embedding embed' = fsm_embedding fsm
-  lift . swont $ waitForMessage b $ embed' $ unCompositing fsm absurd sf
+-- stdWaitFor :: (Message -> Bool) -> Compositing' FrameInfo o Void -> Compositing' FrameInfo o ()
+-- stdWaitFor b sf = Compositing $ do
+--   fsm <- ask
+--   let Embedding embed' = fsm_embedding fsm
+--   lift . swont $ waitForMessage b $ embed' $ unCompositing fsm absurd sf
 
 
-stdWait :: o -> Compositing' FrameInfo o ()
-stdWait sf = Compositing $ do
-  Embedding embed' <- asks fsm_embedding
-  lift . swont $ waitForOk $ embed' $ constant sf
+-- stdWait :: o -> Compositing' FrameInfo o ()
+-- stdWait sf = Compositing $ do
+--   Embedding embed' <- asks fsm_embedding
+--   lift . swont $ waitForOk $ embed' $ constant sf
 
-waitForMessage :: (Message -> Bool) -> SF FrameInfo o -> SF FrameInfo (o, Event ())
-waitForMessage b sf = sf &&& (arr fi_controls >>> waitControls >>> arr (any b) >>> edge)
+-- waitForMessage :: (Message -> Bool) -> SF FrameInfo o -> SF FrameInfo (o, Event ())
+-- waitForMessage b sf = sf &&& (arr fi_controls >>> waitControls >>> arr (any b) >>> edge)
 
-waitForOk :: SF FrameInfo o -> SF FrameInfo (o, Event ())
-waitForOk = waitForMessage (== Ok)
+-- waitForOk :: SF FrameInfo o -> SF FrameInfo (o, Event ())
+-- waitForOk = waitForMessage (== Ok)
 
-waitForRestart :: SF FrameInfo o -> SF FrameInfo (o, Event ())
-waitForRestart = waitForMessage (== Restart)
+-- waitForRestart :: SF FrameInfo o -> SF FrameInfo (o, Event ())
+-- waitForRestart = waitForMessage (== Restart)
 
 
 ------------------------------------------------------------------------------

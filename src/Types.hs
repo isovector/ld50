@@ -92,7 +92,7 @@ data Actor = Actor
   deriving (Show, Generic)
 
 data ZoneType
-  = SendMessage Message
+  = SendMessage WorldInteraction
   deriving (Eq, Ord, Show, Read)
 
 data Zone = Zone
@@ -167,11 +167,11 @@ type Compositing' i o = Compositing i o i o
 
 
 data Message
-  = Ok
-  | Restart
-  | Quit
-  | HitWall
-  | Goto FieldName (V2 Double)
+  = Interact
+  deriving (Eq, Ord, Show, Read)
+
+data WorldInteraction
+  = Goto FieldName (V2 Double)
   deriving (Eq, Ord, Show, Read)
 
 data Switch i o a

@@ -2,7 +2,6 @@
 
 module Game where
 
-import           Controls (waitControls)
 import           Data.Bool (bool)
 import           Data.Foldable (for_)
 import           GHC.Generics (Generic)
@@ -46,7 +45,7 @@ game rs =
 dialogMsg :: CharName -> String -> Compositing' FrameInfo Renderable ()
 dialogMsg who say = liftCompositing $ do
   swont $ proc fi -> do
-    msgs <- waitControls -< fi_controls fi
+    ok <- interactionEvent -< fi_controls fi
     returnA -<
       ( \rs -> do
           let renderer = e_renderer $ r_engine rs
@@ -54,7 +53,7 @@ dialogMsg who say = liftCompositing $ do
           fillRect renderer $ Just $ Rectangle (P $ V2 0 95) $ fmap round screen
           drawPortait who (V2 2 100) rs
           drawText 6 white say (V2 42 110) rs
-      , bool noEvent (pure ()) $ any (== Ok) msgs
+      , ok
       )
 
 
@@ -85,6 +84,10 @@ facingToFacing :: Facing -> V2 Bool
 facingToFacing FacingLeft = V2 True False
 facingToFacing FacingRight = pure False
 
+interactionEvent :: SF Controls (Event ())
+interactionEvent = arr c_action >>> edge
+
+
 runningState
     :: Resources
     -> World
@@ -92,13 +95,13 @@ runningState
 runningState rs = \(World fname p0) ->
   let f = r_fields rs fname in
   withRoot $ dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
-    pos <- charpos f p0 -< fi
-    anim    <- arr (bool Idle Run . (/= 0) . setForce f . c_arrows) -< fi_controls fi
-    dir <- direction -< pos
-    t <- mkAnim rs MainCharacter -< anim
+    pos  <- charpos f p0 -< fi
+    anim <- arr (bool Idle Run . (/= 0) . setForce f . c_arrows) -< fi_controls fi
+    dir  <- direction -< pos
+    t    <- mkAnim rs MainCharacter -< anim
 
     peeps <- traverse (mkAnim rs . a_name) (f_actors f) -< Idle
-    evs <- traverse zoneHandler $ f_zones f -< pos
+    evs   <- traverse zoneHandler $ f_zones f -< pos
 
     returnA -<
       ( const $ do
@@ -118,12 +121,12 @@ runningState rs = \(World fname p0) ->
 teleporter
     :: Resources
     -> World
-    -> Message
+    -> WorldInteraction
     -> Maybe (World, Switch FrameInfo Renderable World)
-teleporter rs w HitWall = Just (L.over #w_pos (+ V2 40 0) w, Bind $ runningState rs)
-teleporter _ w Quit = Just (w, Push $ const $ dialogMsg MainCharacter "Odd..." >> pure (w, Done w) )
+-- teleporter rs w HitWall = Just (L.over #w_pos (+ V2 40 0) w, Bind $ runningState rs)
+-- teleporter _ w Quit = Just (w, Push $ const $ dialogMsg MainCharacter "Odd..." >> pure (w, Done w) )
 teleporter rs _ (Goto f v) = Just (World f v, Bind $ runningState rs)
-teleporter _ _ _ = Nothing
+-- teleporter _ _ _ = Nothing
 
 
 
@@ -156,7 +159,7 @@ invertCamera f cam@(V2 camx camy) pos =
     offset = halfScreen + V2 0 4 + fmap (fromIntegral) (f_force f) * 50
 
 
-zoneHandler :: Zone -> SF (V2 Double) (Event Message)
+zoneHandler :: Zone -> SF (V2 Double) (Event WorldInteraction)
 zoneHandler z@(Zone { z_type = SendMessage msg }) =
   proc pos -> do
     ev <- edgeTag msg -< rectContains (z_rect z) pos
@@ -229,13 +232,13 @@ drawDarkness x rs = do
     $ Just $ Rectangle (P $ V2 (fromIntegral x + 10) 0) (V2 1000 1000)
 
 
-gameDfa :: Compositing' FrameInfo Renderable ()
-gameDfa = do
-  over 1.9 $ time >>> arr (\t -> bgColor $ V4 (round $ 255 * (1 - t / 2)) 0 0 255)
-  stdWait $ \rs -> do
-    bgColor (V4 50 0 50 255) rs
-    drawText 8 white "-INTO DARKNESS-" (V2 20 20) rs
-    drawText 8 white "by Sandy Maguire" (V2 15 120) rs
+-- gameDfa :: Compositing' FrameInfo Renderable ()
+-- gameDfa = do
+--   over 1.9 $ time >>> arr (\t -> bgColor $ V4 (round $ 255 * (1 - t / 2)) 0 0 255)
+--   stdWait $ \rs -> do
+--     bgColor (V4 50 0 50 255) rs
+--     drawText 8 white "-INTO DARKNESS-" (V2 20 20) rs
+--     drawText 8 white "by Sandy Maguire" (V2 15 120) rs
 
 
 portrait :: Resources -> CharName -> WrappedTexture

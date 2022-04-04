@@ -20,9 +20,3 @@ parseControls check =
     arrow m n = bool (bool 0 1 $ check n) (-1) $ check m
 
 
-waitControls :: SF Controls [Message]
-waitControls = proc controls -> do
-  ok <- edgeTag [Ok] -< c_action controls
-  restart <- edgeTag [Restart] -< c_restart controls
-  returnA -< event [] join $ catEvents [ ok, restart ]
-
