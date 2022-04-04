@@ -73,6 +73,7 @@ data Field = Field
   , f_tilesize :: V2 Double
   , f_walkable :: V2 Int -> Bool
   , f_zones :: [Zone]
+  , f_force :: V2 Int
   }
   deriving Generic
 
@@ -88,14 +89,15 @@ data Zone = Zone
 
 
 instance Semigroup Field where
-  Field f1 v1 p1 z1 <> Field f2 v2 p2 z2
+  Field f1 v1 p1 z1 _ <> Field f2 v2 p2 z2 _
     = Field (f1 <> f2)
             (coerce ((<>) @(Max (V2 Double))) v1 v2)
             (coerce ((<>) @(V2 Int -> All)) p1 p2)
             (z1 <> z2)
+            0
 
 instance Monoid Field where
-  mempty = Field mempty 0 (const True) mempty
+  mempty = Field mempty 0 (const True) mempty 0
 
 
 

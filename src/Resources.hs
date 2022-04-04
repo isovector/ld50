@@ -16,6 +16,7 @@ import           SDL
 import qualified SDL.Image as Image
 import           System.FilePath (dropFileName, (<.>), (</>))
 import           Text.Read (readMaybe)
+import Debug.Trace (traceM)
 
 
 pad :: Int -> Char -> String -> String
@@ -91,6 +92,9 @@ globalToLocal ts gbl
 parseTilemap :: HasCallStack => Engine -> FieldName -> Tiledmap -> IO Field
 parseTilemap e f ti = do
   let renderer = e_renderer e
+      force_dir = maybe 0 (const (V2 1 0))
+                $ M.lookup "force"
+                $ tiledmapProperties ti
 
   tilesets <-
     for (tiledmapTilesets ti) $ \ts ->
@@ -101,50 +105,55 @@ parseTilemap e f ti = do
       size = fmap fromIntegral
           $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
 
-  pure $ flip foldMap (tiledmapLayers ti) $ \layer ->
-    Field
-      { f_data = \x y ->
-          case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
-               , layerData layer
-               ) of
-            (True, Just tiledata) -> do
-              let idx = y * tiledmapWidth ti + x
-              case globalToLocal ts $ tiledata V.! idx of
-                Just (LocalId tile) -> do
-                  let ix = tile `mod` tilesetColumns ts
-                      iy = tile `div` tilesetColumns ts
-                  pure $ WrappedTexture
-                    { getTexture = tx
-                    , wt_sourceRect = Just
-                                    $ Rectangle (P $ (* size) $ fmap fromIntegral $ V2 ix iy)
-                                    $ size
-                    , wt_size = size
-                    , wt_origin = 0
-                    }
-                Nothing -> mempty
-            _ -> mempty
-      , f_tilesize = fmap fromIntegral size
-      , f_walkable = \(V2 x y) ->
-          case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
-               , layerData layer
-               , layerObjects layer
-               ) of
-            (True, Just tiledata, _) -> do
-              let idx = y * tiledmapWidth ti + x
-              case globalToLocal ts $ tiledata V.! idx of
-                Just lid -> do
-                  let props = tilesetTiles ts M.! lid
-                  maybe True (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
-                Nothing -> True
-            -- Object layers don't obstruct walkability
-            (_, _, Just _) -> True
-            _ -> False
-      , f_zones = mapMaybe parseZone
-                $ join
-                $ fmap V.toList
-                $ maybeToList
-                $ layerObjects layer
-      }
+  pure $
+    let res =
+          flip foldMap (tiledmapLayers ti) $ \layer ->
+            Field
+              { f_data = \x y ->
+                  case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
+                      , layerData layer
+                      ) of
+                    (True, Just tiledata) -> do
+                      let idx = y * tiledmapWidth ti + x
+                      case globalToLocal ts $ tiledata V.! idx of
+                        Just (LocalId tile) -> do
+                          let ix = tile `mod` tilesetColumns ts
+                              iy = tile `div` tilesetColumns ts
+                          pure $ WrappedTexture
+                            { getTexture = tx
+                            , wt_sourceRect = Just
+                                            $ Rectangle (P $ (* size) $ fmap fromIntegral $ V2 ix iy)
+                                            $ size
+                            , wt_size = size
+                            , wt_origin = 0
+                            }
+                        Nothing -> mempty
+                    _ -> mempty
+              , f_tilesize = fmap fromIntegral size
+              , f_walkable = \(V2 x y) ->
+                  case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
+                      , layerData layer
+                      , layerObjects layer
+                      ) of
+                    (True, Just tiledata, _) -> do
+                      let idx = y * tiledmapWidth ti + x
+                      case globalToLocal ts $ tiledata V.! idx of
+                        Just lid -> do
+                          let props = tilesetTiles ts M.! lid
+                          maybe True (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
+                        Nothing -> True
+                    -- Object layers don't obstruct walkability
+                    (_, _, Just _) -> True
+                    _ -> False
+              , f_zones = mapMaybe parseZone
+                        $ join
+                        $ fmap V.toList
+                        $ maybeToList
+                        $ layerObjects layer
+              , f_force = 0
+              }
+    in res { f_force = force_dir }
+
 
 parseZone :: Object -> Maybe Zone
 parseZone o =

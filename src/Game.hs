@@ -11,13 +11,10 @@ import Controls (waitControls)
 import GHC.Generics (Generic)
 
 
-clampedArrows :: Controls -> V2 Int
-clampedArrows = modifyX (clamp (0, 1)) . c_arrows
-
 
 charpos :: Field -> V2 Double -> SF FrameInfo (V2 Double)
 charpos f p0 = loopPre p0 $ proc (FrameInfo controls dt, pos) -> do
-  let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ clampedArrows controls
+  let dpos = fmap (* dt) . fmap (* 60) $ fmap fromIntegral $ setForce f $ c_arrows controls
   returnA -< dup $
     let pos' = pos + dpos
      in case f_walkable f (worldToTile f pos') of
@@ -60,6 +57,17 @@ dialogMsg = liftCompositing $ do
 runningGame :: Resources -> Compositing' FrameInfo Renderable World
 runningGame rs = evolveC (World TestField $ V2 20 20) $ runningState rs
 
+setForce :: Field -> V2 Int -> V2 Int
+setForce f (V2 x y) =
+  case f_force f of
+    V2 fx fy -> V2 (force fx x) (force fy y)
+  where
+    force 0 b = b
+    force a b
+      | signum a /= signum b = 0
+      | otherwise = b
+
+
 runningState
     :: Resources
     -> World
@@ -68,7 +76,7 @@ runningState rs = \(World fname p0) ->
   let f = r_fields rs fname in
   withRoot $ dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
     pos <- charpos f p0 -< fi
-    anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< fi_controls fi
+    anim    <- arr (bool Idle Run . (/= 0) . setForce f . c_arrows) -< fi_controls fi
     t <- mkAnim rs MainCharacter -< anim
     evs <- traverse zoneHandler $ f_zones f -< pos
 
@@ -122,39 +130,39 @@ zoneHandler z@(Zone { z_type = SendMessage msg }) =
     returnA -< ev
 
 
-field :: Resources -> Swont (Bool, FrameInfo) Renderable [Message]
-field rs = let f = r_fields rs Another in
-  swont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi@(FrameInfo controls _)) -> do
-  pos     <- charpos (r_fields rs Another) (V2 40 40) -< fi
-  anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
-  mc      <- mkAnim rs MainCharacter -< anim
+-- field :: Resources -> Swont (Bool, FrameInfo) Renderable [Message]
+-- field rs = let f = r_fields rs Another in
+--   swont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi@(FrameInfo controls _)) -> do
+--   pos     <- charpos (r_fields rs Another) (V2 40 40) -< fi
+--   anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
+--   mc      <- mkAnim rs MainCharacter -< anim
 
-  clap    <- mkAnim rs Claptrap      -< Idle
-  martha  <- mkAnim rs Martha        -< Idle
+--   clap    <- mkAnim rs Claptrap      -< Idle
+--   martha  <- mkAnim rs Martha        -< Idle
 
-  msgs <- traverse zoneHandler (f_zones f) -< pos
+--   msgs <- traverse zoneHandler (f_zones f) -< pos
 
-  returnA -< (, sequenceA msgs) $ \rs' -> do
-    bgColor (V4 255 0 0 255) rs'
-    let cam = pos
+--   returnA -< (, sequenceA msgs) $ \rs' -> do
+--     bgColor (V4 255 0 0 255) rs'
+--     let cam = pos
 
-    drawTiles f cam rs'
+--     drawTiles f cam rs'
 
-    let stretch = bool 0 (V2 2 0) $ getX (c_arrows controls) < 0
-    drawSpriteStretched
-      mc
-      (asPerCamera cam pos)
-      0
-      (pure False)
-      stretch
-      rs'
+--     let stretch = bool 0 (V2 2 0) $ getX (c_arrows controls) < 0
+--     drawSpriteStretched
+--       mc
+--       (asPerCamera cam pos)
+--       0
+--       (pure False)
+--       stretch
+--       rs'
 
-    drawSprite clap (asPerCamera cam $ V2 60 40) 0 (pure True) rs'
+--     drawSprite clap (asPerCamera cam $ V2 60 40) 0 (pure True) rs'
 
-    let martha_pos = asPerCamera cam $ V2 80 80
-    drawText 4 white "help!" (martha_pos - V2 0 30) rs
-    drawSprite martha (martha_pos) 0 (V2 True False) rs'
-    drawDarkness (round $ getX (asPerCamera cam pos)) rs'
+--     let martha_pos = asPerCamera cam $ V2 80 80
+--     drawText 4 white "help!" (martha_pos - V2 0 30) rs
+--     drawSprite martha (martha_pos) 0 (V2 True False) rs'
+--     drawDarkness (round $ getX (asPerCamera cam pos)) rs'
 
 
 drawTiles :: Field -> V2 Double -> Renderable
