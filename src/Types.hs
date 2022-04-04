@@ -25,10 +25,14 @@ import Debug.Trace (traceShowId, traceM)
 import Data.Functor ((<&>))
 import Control.Applicative
 import SDL.Mixer (Chunk)
+import Graphics.Rendering.OpenGL (Program)
 
 
 data Engine = Engine
   { e_renderer :: Renderer
+  , e_window :: Window
+  , e_buffer :: Texture
+  , e_shader_program :: Program
   }
   deriving Generic
 

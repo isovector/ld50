@@ -90,7 +90,8 @@ executable ld50-exe
       ViewPatterns
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      Yampa
+      OpenGL
+    , Yampa
     , aeson
     , aeson-tiled
     , base >=4.7 && <5

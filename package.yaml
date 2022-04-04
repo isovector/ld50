@@ -39,6 +39,7 @@ dependencies:
 - aeson
 - generic-lens
 - microlens
+- OpenGL
 
 ghc-options:
 - -Wall
