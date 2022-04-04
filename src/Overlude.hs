@@ -8,7 +8,6 @@ module Overlude
   , asks
   ) where
 
-import           Control.Applicative (liftA2)
 import           Control.Monad
 import           Control.Monad.Cont
 import           Control.Monad.Reader
@@ -18,6 +17,7 @@ import qualified Data.Text as T
 import           Foreign.C
 import           SDL hiding (time, Event)
 import           Types hiding (next)
+import Data.List (genericLength)
 
 bgColor :: V4 Word8 -> Renderable
 bgColor col rs = do
@@ -134,9 +134,9 @@ drawText sz color text (V2 x y) rs = do
   rendererDrawBlendMode renderer $= BlendAlphaBlend
 
 
-timedSequence :: Double -> [SF i o] -> SF i o
-timedSequence interval sfs =
-  flip runSwont (error "timedSequence terminated") $
+timedSequence :: SF i o -> Double -> [SF i o] -> SF i o
+timedSequence d interval sfs =
+  flip runSwont (const d) $
     traverse_ (dswont . (&&& after interval ())) sfs
 
 
@@ -244,5 +244,29 @@ select f = proc (c, i) -> do
 
 mkAnim :: Resources -> CharName -> SF Anim WrappedTexture
 mkAnim rs c = (arr id &&& time)
-          >>> select (timedSequence 0.1 . cycle . fmap constant . r_sprites rs c)
+          >>> select (timedSequence (error "impossible") 0.1 . cycle . fmap constant . r_sprites rs c)
+
+
+fade :: [V4 Word8] -> Time -> SF a Renderable
+fade colors duration =
+  timedSequence
+      (constant $ const $ pure ())
+      (duration / genericLength colors) $ colors <&> \c -> constant $ \rs -> do
+    let renderer = e_renderer $ r_engine rs
+    rendererDrawColor renderer $= c
+    fillRect renderer Nothing
+
+fadeColors :: V4 Word8 -> [V4 Word8]
+fadeColors (V4 r g b a) =
+  [ V4 r g b (a `div` 4)
+  , V4 r g b (a `div` 2)
+  , V4 r g b a
+  , V4 r g b a
+  ]
+
+fadeTo :: V4 Word8 -> Double -> SF a Renderable
+fadeTo color = fade (fadeColors color)
+
+fadeFrom :: V4 Word8 -> Double -> SF a Renderable
+fadeFrom color = fade (reverse $ fadeColors color)
 

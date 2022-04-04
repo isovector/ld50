@@ -137,10 +137,12 @@ teleporter
     -> World
     -> WorldInteraction
     -> Maybe (World, Switch FrameInfo Renderable World)
--- teleporter rs w HitWall = Just (L.over #w_pos (+ V2 40 0) w, Bind $ runningState rs)
--- teleporter _ w TestInteraction =
-teleporter rs _ (Goto f v) = Just (World f v, Bind $ runningState rs)
--- teleporter _ _ _ = Nothing
+teleporter rs _ (Goto f v) =
+  -- This is a bad fade, but whatever.
+  Just $ (World f v,) $ Bind $ \w ->
+    pushDialog (runningState rs w) $ do
+      over 0.5 $ fadeTo (V4 0 0 0 255) 0.5
+      over 0.5 $ fadeFrom (V4 0 0 0 255) 0.5
 
 runInteraction
     :: World

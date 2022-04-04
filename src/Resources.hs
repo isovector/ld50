@@ -16,7 +16,6 @@ import           SDL
 import qualified SDL.Image as Image
 import           System.FilePath (dropFileName, (<.>), (</>))
 import           Text.Read (readMaybe)
-import Control.Applicative
 
 
 pad :: Int -> Char -> String -> String
