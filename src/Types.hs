@@ -92,6 +92,7 @@ data Field = Field
   , f_zones :: [Zone]
   , f_force :: V2 Int
   , f_actors :: [Actor]
+  , f_blockers :: [(V2 Double, V2 Double)]
   }
   deriving Generic
 
@@ -125,16 +126,17 @@ data Zone = Zone
 
 
 instance Semigroup Field where
-  Field f1 v1 p1 z1 _ a1 <> Field f2 v2 p2 z2 _ a2
+  Field f1 v1 p1 z1 _ a1 b1 <> Field f2 v2 p2 z2 _ a2 b2
     = Field (f1 <> f2)
             (coerce ((<>) @(Max (V2 Double))) v1 v2)
             (coerce ((<>) @(V2 Int -> All)) p1 p2)
             (z1 <> z2)
             0
             (a1 <> a2)
+            (b1 <> b2)
 
 instance Monoid Field where
-  mempty = Field mempty 0 (const True) mempty 0 mempty
+  mempty = Field mempty 0 (const True) mempty 0 mempty mempty
 
 
 

@@ -164,8 +164,16 @@ parseTilemap e f ti = do
               , f_zones = mapMaybe parseZone objs
               , f_force = 0
               , f_actors = mapMaybe parseActors objs
+              , f_blockers = parseBlockers =<< objs
               }
     in res { f_force = force_dir }
+
+parseBlockers :: Object -> [(V2 Double, V2 Double)]
+parseBlockers o = case objectPolyline o of
+  Nothing -> mempty
+  Just vec ->
+    let ps = fmap (uncurry V2) $ V.toList vec
+     in zip ps $ tail ps
 
 
 parseActors :: Object -> Maybe Actor

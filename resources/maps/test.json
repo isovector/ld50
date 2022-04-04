@@ -63,6 +63,62 @@
                  "width":16,
                  "x":128,
                  "y":0
+                }, 
+                {
+                 "height":0,
+                 "id":6,
+                 "name":"",
+                 "polyline":[
+                        {
+                         "x":0,
+                         "y":0
+                        }, 
+                        {
+                         "x":0,
+                         "y":36
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":136,
+                 "y":52
+                }, 
+                {
+                 "height":0,
+                 "id":7,
+                 "name":"",
+                 "polyline":[
+                        {
+                         "x":0,
+                         "y":0
+                        }, 
+                        {
+                         "x":0,
+                         "y":-64
+                        }, 
+                        {
+                         "x":112,
+                         "y":-64
+                        }, 
+                        {
+                         "x":112,
+                         "y":96
+                        }, 
+                        {
+                         "x":0,
+                         "y":96
+                        }, 
+                        {
+                         "x":0,
+                         "y":48
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":392,
+                 "y":72
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -71,7 +127,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":6,
+ "nextobjectid":8,
  "orientation":"orthogonal",
  "properties":[
         {
