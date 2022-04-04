@@ -145,7 +145,7 @@ parseTilemap e f ti = do
                       case globalToLocal ts $ tiledata V.! idx of
                         Just lid -> do
                           let props = tilesetTiles ts M.! lid
-                          maybe True (isWalkable . propertyValue) $ M.lookup "walkable" $ tileProperties props
+                          maybe True (fromBool True . propertyValue) $ M.lookup "walkable" $ tileProperties props
                         Nothing -> True
                     -- Object layers don't obstruct walkability
                     (_, _, Just _) -> True
@@ -169,10 +169,10 @@ parseZone o =
             (P $ V2 (objectX o) (objectY o))
             (V2 (objectWidth o) (objectHeight o)))
 
-isWalkable :: Value -> Bool
-isWalkable (Bool b) = b
-isWalkable Null = True
-isWalkable _ = error "insane value for isWalkable. broken tileset"
+fromBool :: Bool -> Value -> Bool
+fromBool _ (Bool b) = b
+fromBool b Null = b
+fromBool _ _ = error "insane value for fromBool. broken tileset"
 
 within :: Int -> Int -> Int -> Bool
 within x lo hi = lo <= x && x < hi

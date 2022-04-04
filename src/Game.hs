@@ -93,7 +93,7 @@ runningState rs = \(World fname p0) ->
     returnA -<
       ( const $ do
           drawTiles f pos rs
-          drawSprite t (asPerCamera pos pos) 0 (V2 dir False) rs
+          drawSprite t (asPerCamera f pos pos) 0 (V2 dir False) rs
       , mapFilterE (teleporter rs $ World fname pos) $ mergeEvents evs
       )
 
@@ -122,15 +122,20 @@ screen = V2 160 144
 halfScreen :: V2 Double
 halfScreen = screen * 0.5
 
-asPerCamera :: V2 Double -> V2 Double -> V2 Double
-asPerCamera cam@(V2 camx camy) pos =
-  pos - cam + V2 (clamp (0, getX halfScreen + 50) camx)
-                 (clamp (0, getY halfScreen + 4)  camy)
+asPerCamera :: Field -> V2 Double -> V2 Double -> V2 Double
+asPerCamera f cam@(V2 camx camy) pos =
+  pos - cam + V2 (clamp (0, getX offset) camx)
+                 (clamp (0, getY offset) camy)
+  where
+    offset = halfScreen + V2 0 4 + fmap (fromIntegral) (f_force f) * 50
 
-invertCamera :: V2 Double -> V2 Double -> V2 Double
-invertCamera cam@(V2 camx camy) pos =
-  pos + cam - V2 (clamp (0, getX halfScreen + 50) camx)
-                 (clamp (0, getY halfScreen + 4)  camy)
+
+invertCamera :: Field -> V2 Double -> V2 Double -> V2 Double
+invertCamera f cam@(V2 camx camy) pos =
+  pos + cam - V2 (clamp (0, getX offset) camx)
+                 (clamp (0, getY offset) camy)
+  where
+    offset = halfScreen + V2 0 4 + fmap (fromIntegral) (f_force f) * 50
 
 
 zoneHandler :: Zone -> SF (V2 Double) (Event Message)
@@ -178,15 +183,15 @@ zoneHandler z@(Zone { z_type = SendMessage msg }) =
 drawTiles :: Field -> V2 Double -> Renderable
 drawTiles f cam rs = do
   let tiles = f_data f
-      topleft = worldToTile f $ invertCamera cam 0
-      botright = worldToTile f $ invertCamera cam screen
+      topleft = worldToTile f $ invertCamera f cam 0
+      botright = worldToTile f $ invertCamera f cam screen
 
   for_ [getY topleft .. getY botright] $ \y ->
     for_ [getX topleft .. getX botright] $ \x ->
       for_ (tiles x y) $ \wt ->
         drawSprite
           wt
-          (asPerCamera cam $ (* f_tilesize f) $ fmap fromIntegral $ V2 x y)
+          (asPerCamera f cam $ (* f_tilesize f) $ fmap fromIntegral $ V2 x y)
           0
           (pure False)
           rs
