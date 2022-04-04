@@ -8,6 +8,7 @@ import qualified Lens.Micro as L
 import           Overlude hiding (now)
 import           SDL hiding (get, Event, time)
 import Controls (waitControls)
+import GHC.Generics (Generic)
 
 
 clampedArrows :: Controls -> V2 Int
@@ -32,6 +33,12 @@ white = V3 255 255 255
 black :: V3 Word8
 black = V3 0 0 0
 
+data World = World
+  { w_field :: FieldName
+  , w_pos :: V2 Double
+  }
+  deriving Generic
+
 game :: Resources -> SF FrameInfo Renderable
 game rs =
   runCompositing (error "fin") $ runningGame rs
@@ -50,15 +57,15 @@ dialogMsg = liftCompositing $ do
       )
 
 
-runningGame :: Resources -> Compositing' FrameInfo Renderable (V2 Double)
-runningGame rs = evolveC (V2 20 20) $ runningState rs
+runningGame :: Resources -> Compositing' FrameInfo Renderable World
+runningGame rs = evolveC (World TestField $ V2 20 20) $ runningState rs
 
 runningState
     :: Resources
-    -> V2 Double
-    -> Compositing' FrameInfo Renderable (V2 Double, Switch FrameInfo Renderable (V2 Double))
-runningState rs = \p0 ->
-  let f = r_fields rs Another in
+    -> World
+    -> Compositing' FrameInfo Renderable (World, Switch FrameInfo Renderable World)
+runningState rs = \(World fname p0) ->
+  let f = r_fields rs fname in
   withRoot $ dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
     pos <- charpos f p0 -< fi
     anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< fi_controls fi
@@ -69,17 +76,17 @@ runningState rs = \p0 ->
       ( const $ do
           drawTiles f pos rs
           drawSprite t (asPerCamera pos pos) 0 (pure False) rs
-      , mapFilterE (teleporter rs pos) $ mergeEvents evs
+      , mapFilterE (teleporter rs $ World fname pos) $ mergeEvents evs
       )
 
 teleporter
     :: Resources
-    -> V2 Double
+    -> World
     -> Message
-    -> Maybe (V2 Double, Switch FrameInfo Renderable (V2 Double))
-teleporter rs v HitWall = Just (v + V2 40 0, Bind $ runningState rs)
-teleporter _ v Quit = Just (v, Push $ const $ dialogMsg >> pure (v, Done v) )
-teleporter rs _ (Goto f v) = Just (v, Bind $ runningState rs)
+    -> Maybe (World, Switch FrameInfo Renderable World)
+teleporter rs w HitWall = Just (L.over #w_pos (+ V2 40 0) w, Bind $ runningState rs)
+teleporter _ w Quit = Just (w, Push $ const $ dialogMsg >> pure (w, Done w) )
+teleporter rs _ (Goto f v) = Just (World f v, Bind $ runningState rs)
 teleporter _ _ _ = Nothing
 
 
