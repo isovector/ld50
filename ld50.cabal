@@ -31,6 +31,7 @@ executable ld50-exe
       Lib
       Overlude
       Resources
+      Shaders
       Types
       Paths_ld50
   hs-source-dirs:

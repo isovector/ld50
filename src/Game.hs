@@ -267,6 +267,7 @@ drawDarkness x rs = do
     Nothing
     (Just $ Rectangle (P $ V2 (fromIntegral x - 64) 0) $ fmap round $ screen * V2 0.5 1)
   rendererDrawColor renderer $= V4 0 0 0 255
+  -- TODO(sandy): fillRect turns off our shader
   fillRect renderer
     $ Just $ Rectangle (P $ V2 (fromIntegral x + 10) 0) (V2 1000 1000)
 

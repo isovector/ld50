@@ -19,6 +19,8 @@ import SDL hiding (copy, Stereo)
 import SDL.Mixer hiding (quit)
 import System.Exit
 import System.FilePath ((</>))
+import Graphics.Rendering.OpenGL (Color4(Color4), GLfloat)
+import Shaders
 
 
 
@@ -77,14 +79,19 @@ main = do
   attachShader program =<< makeShader VertexShader   "std.vertex"
   attachShader program =<< makeShader FragmentShader "test.fragment"
 
+
+
   validateProgram program
   linkProgram program
+  currentProgram $= Just program
 
+  us <- getUniforms program
   let engine = Engine
         { e_renderer = renderer
         , e_window = window
         , e_buffer = buffer
         , e_shader_program = program
+        , e_uniform_locs = us
         }
   rs <- loadResources engine
 
@@ -135,6 +142,11 @@ output rs _ render = do
 
   rendererRenderTarget renderer $= Nothing
   glBindTexture $ e_buffer e
+
+  pushUniforms e $ Uniforms (pure $ V4 1 0 0 0.5)
+
+
+
   glSwapWindow $ e_window e
   pure False
 

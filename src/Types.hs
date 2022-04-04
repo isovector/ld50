@@ -1,5 +1,6 @@
 {-# LANGUAGE StrictData #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Types
   ( module Types
@@ -26,6 +27,7 @@ import Data.Functor ((<&>))
 import Control.Applicative
 import SDL.Mixer (Chunk)
 import Graphics.Rendering.OpenGL (Program)
+import Graphics.Rendering.OpenGL.GL (UniformLocation)
 
 
 data Engine = Engine
@@ -33,6 +35,7 @@ data Engine = Engine
   , e_window :: Window
   , e_buffer :: Texture
   , e_shader_program :: Program
+  , e_uniform_locs :: Uniforms (Const UniformLocation)
   }
   deriving Generic
 
@@ -196,6 +199,12 @@ data WorldInteraction
 data ActorInteraction
   = PortalWarning
   deriving (Eq, Ord, Show, Read)
+
+data Uniforms f = Uniforms
+  { u_mood_color :: f (V4 Float)
+  }
+
+deriving instance Show (f (V4 Float)) => Show (Uniforms f)
 
 
 data Switch i o a

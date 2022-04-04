@@ -5,7 +5,6 @@ module Controls where
 import Types
 import SDL
 import Data.Bool (bool)
-import Control.Monad
 
 
 parseControls :: (Scancode -> Bool) -> Controls
