@@ -106,16 +106,21 @@ runningState rs = \(World fname p0) ->
 
     returnA -<
       ( const $ do
+          let cam = pos
+
           drawTiles f pos rs
 
           for_ (zip peeps $ f_actors f) $ \(wt, actor) -> do
             drawSprite wt
-              (asPerCamera f pos $ a_pos actor)
+              (asPerCamera f cam $ a_pos actor)
               0
               (facingToFacing $ a_facing actor)
               rs
 
-          drawSprite t (asPerCamera f pos pos) 0 (V2 dir False) rs
+          drawSprite t (asPerCamera f cam pos) 0 (V2 dir False) rs
+          when (f_force f /= 0) $
+            drawDarkness (round $ getX (asPerCamera f cam pos)) rs
+
       , let w' = World fname pos in
         mergeEvents
           [ mapFilterE (teleporter rs w') $ mergeEvents evs
@@ -223,7 +228,6 @@ zoneHandler z@(Zone { z_type = SendMessage msg }) =
 --     let martha_pos = asPerCamera cam $ V2 80 80
 --     drawText 4 white "help!" (martha_pos - V2 0 30) rs
 --     drawSprite martha (martha_pos) 0 (V2 True False) rs'
---     drawDarkness (round $ getX (asPerCamera cam pos)) rs'
 
 
 drawTiles :: Field -> V2 Double -> Renderable
