@@ -1,9 +1,12 @@
 {-# LANGUAGE StrictData #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Types
   ( module Types
   , module FRP.Yampa
   , module Debug.Trace
+  , module Control.Applicative
+  , (<&>)
   , Word8
   ) where
 
@@ -19,6 +22,8 @@ import Data.Semigroup (Max(..))
 import Control.Monad.Reader
 import GHC.Generics (Generic)
 import Debug.Trace (traceShowId, traceM)
+import Data.Functor ((<&>))
+import Control.Applicative
 
 
 data Engine = Engine
@@ -172,10 +177,17 @@ data Message
 
 data WorldInteraction
   = Goto FieldName (V2 Double)
+  | TestInteraction
   deriving (Eq, Ord, Show, Read)
 
 data Switch i o a
   = Push (a -> Compositing' i o (a, Switch i o a))
   | Bind (a -> Compositing' i o (a, Switch i o a))
   | Done a
+
+instance (Eq a,Floating a) => VectorSpace (V2 a) a where
+  zeroVector = 0
+  (*^) a = fmap (* a)
+  (^+^) = (+)
+  dot v1 v2 = sum $ liftA2 (*) v1 v2
 

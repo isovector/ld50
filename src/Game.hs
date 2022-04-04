@@ -3,12 +3,12 @@
 module Game where
 
 import           Data.Bool (bool)
-import           Data.Foldable (for_)
+import           Data.Foldable (for_, asum)
 import           GHC.Generics (Generic)
 import qualified Lens.Micro as L
 import           Overlude hiding (now)
 import           SDL hiding (delay, get, Event, time)
-
+import Prelude hiding (interact)
 
 
 charpos :: Field -> V2 Double -> SF FrameInfo (V2 Double)
@@ -49,7 +49,7 @@ dialogMsg who say = liftCompositing $ do
     returnA -<
       ( \rs -> do
           let renderer = e_renderer $ r_engine rs
-          rendererDrawColor renderer $= V4 0 0 0 96
+          rendererDrawColor renderer $= V4 0 0 0 192
           fillRect renderer $ Just $ Rectangle (P $ V2 0 95) $ fmap round screen
           drawPortait who (V2 2 100) rs
           drawText 6 white say (V2 42 110) rs
@@ -102,6 +102,7 @@ runningState rs = \(World fname p0) ->
 
     peeps <- traverse (mkAnim rs . a_name) (f_actors f) -< Idle
     evs   <- traverse zoneHandler $ f_zones f -< pos
+    interact <- interactionEvent -< fi_controls fi
 
     returnA -<
       ( const $ do
@@ -115,7 +116,17 @@ runningState rs = \(World fname p0) ->
               rs
 
           drawSprite t (asPerCamera f pos pos) 0 (V2 dir False) rs
-      , mapFilterE (teleporter rs $ World fname pos) $ mergeEvents evs
+      , mapFilterE (teleporter rs $ World fname pos)
+          $ mergeEvents
+          $ mappend evs
+          $ pure
+          $ do
+              () <- interact
+              asum $ do
+                actor <- f_actors f
+                if norm (a_pos actor - pos) <= 20
+                   then pure $ Event TestInteraction
+                   else empty
       )
 
 teleporter
@@ -124,7 +135,10 @@ teleporter
     -> WorldInteraction
     -> Maybe (World, Switch FrameInfo Renderable World)
 -- teleporter rs w HitWall = Just (L.over #w_pos (+ V2 40 0) w, Bind $ runningState rs)
--- teleporter _ w Quit = Just (w, Push $ const $ dialogMsg MainCharacter "Odd..." >> pure (w, Done w) )
+teleporter _ w TestInteraction = Just $ (w,) $ Push $ const $ do
+  dialogMsg Martha "Beware the portal!"
+  dialogMsg MainCharacter "Odd..."
+  pure (w, Done w)
 teleporter rs _ (Goto f v) = Just (World f v, Bind $ runningState rs)
 -- teleporter _ _ _ = Nothing
 
