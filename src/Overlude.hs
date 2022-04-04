@@ -18,7 +18,7 @@ import           Data.Point2
 import qualified Data.Text as T
 import           Foreign.C
 import           SDL hiding (time, Event)
-import           Types
+import           Types hiding (next)
 import Data.Void
 
 bgColor :: V4 Word8 -> Renderable
@@ -73,6 +73,7 @@ liftSwont = swont . (&&& never)
 withRoot :: Swont (Bool, i) o a -> Compositing d e i o a
 withRoot m = Compositing $ ReaderT $ \fsm ->
   prependSwont (constant (fsm_root fsm) &&& arr id) (arr snd) m
+
 
 
 over :: Time -> SF i o -> Compositing' i o ()
@@ -186,10 +187,24 @@ rectContains (Rectangle (P (V2 x y)) (V2 w h)) (V2 px py) = and
 
 
 evolve :: s -> (s -> Swont i o (s, Maybe e)) -> Swont i o (s, e)
-evolve s0 f = do
+evolve s0 f =
   f s0 >>= \case
     (s, Just e) -> pure (s, e)
     (s, Nothing) -> evolve s f
+
+evolveC :: s -> (s -> Compositing' i Renderable (s, Switch i Renderable s)) -> Compositing' i Renderable s
+evolveC s0 f = do
+  (s, next) <- f s0
+  case next of
+    Push g -> pushDialog (evolveC s f) $ evolveC s g
+    Bind g -> evolveC s g
+    Done r -> pure r
+
+pushDialog :: Compositing' i Renderable b -> Compositing' i Renderable a -> Compositing' i Renderable b
+pushDialog under above = do
+  fsm <- ask
+  _ <- push (*>.) (unCompositing (localFSM id fsm) (error "sf ended during dialog") under) above
+  under
 
 
 ------------------------------------------------------------------------------

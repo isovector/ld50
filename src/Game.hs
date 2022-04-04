@@ -34,24 +34,32 @@ black = V3 0 0 0
 
 game :: Resources -> SF FrameInfo Renderable
 game rs =
-  runCompositing (error "fin") $ do
-    -- gameDfa
-    pushDialog (withRoot $ runningGame rs)
-      $ liftCompositing $ swont $ proc fi -> do
-          msgs <- waitControls -< fi_controls fi
-          returnA -<
-            ( const $ do
-                let renderer = e_renderer $ r_engine rs
-                rendererDrawColor renderer $= pure 255
-                fillRect renderer $ Just $ Rectangle (P $ pure 20) (pure 20)
-            , bool noEvent (pure ()) $ any (== Ok) msgs
-            )
+  runCompositing (error "fin") $ runningGame rs
 
 
-runningGame :: Resources -> Swont (Bool, FrameInfo) Renderable (V2 Double, Message)
-runningGame rs = evolve (V2 20 20) $ \p0 ->
+dialogMsg :: Compositing' FrameInfo Renderable ()
+dialogMsg = liftCompositing $ do
+  swont $ proc fi -> do
+    msgs <- waitControls -< fi_controls fi
+    returnA -<
+      ( \rs -> do
+          let renderer = e_renderer $ r_engine rs
+          rendererDrawColor renderer $= pure 255
+          fillRect renderer $ Just $ Rectangle (P $ pure 20) (pure 20)
+      , bool noEvent (pure ()) $ any (== Ok) msgs
+      )
+
+
+runningGame :: Resources -> Compositing' FrameInfo Renderable (V2 Double)
+runningGame rs = evolveC (V2 20 20) $ runningState rs
+
+runningState
+    :: Resources
+    -> V2 Double
+    -> Compositing' FrameInfo Renderable (V2 Double, Switch FrameInfo Renderable (V2 Double))
+runningState rs = \p0 ->
   let f = r_fields rs TestField in
-  dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
+  withRoot $ dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
     pos <- charpos f p0 -< fi
     anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< fi_controls fi
     t <- mkAnim rs MainCharacter -< anim
@@ -61,20 +69,17 @@ runningGame rs = evolve (V2 20 20) $ \p0 ->
       ( const $ do
           drawTiles f pos rs
           drawSprite t (asPerCamera pos pos) 0 (pure False) rs
-      , mapFilterE (teleporter pos) $ mergeEvents evs
+      , mapFilterE (teleporter rs pos) $ mergeEvents evs
       )
 
-pushDialog :: Compositing' i Renderable b -> Compositing' i Renderable a -> Compositing' i Renderable b
-pushDialog under above = do
-  fsm <- ask
-  _ <- push (*>.) (unCompositing (localFSM id fsm) (error "sf ended during dialog") under) above
-  under
-
-
-teleporter :: V2 Double -> Message -> Maybe (V2 Double, Maybe Message)
-teleporter v HitWall = Just (v + V2 40 0, Nothing)
-teleporter v Quit = Just (v, Just Quit)
-teleporter _ _ = Nothing
+teleporter
+    :: Resources
+    -> V2 Double
+    -> Message
+    -> Maybe (V2 Double, Switch FrameInfo Renderable (V2 Double))
+teleporter rs v HitWall = Just (v + V2 40 0, Bind $ runningState rs)
+teleporter _ v Quit = Just (v, Push $ const $ dialogMsg >> pure (v, Done v) )
+teleporter _ _ _ = Nothing
 
 
 

@@ -155,3 +155,8 @@ data Message
   | HitWall
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+data Switch i o a
+  = Push (a -> Compositing' i o (a, Switch i o a))
+  | Bind (a -> Compositing' i o (a, Switch i o a))
+  | Done a
+
