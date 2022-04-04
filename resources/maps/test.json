@@ -76,8 +76,8 @@
  "properties":[
         {
          "name":"force",
-         "type":"bool",
-         "value":true
+         "type":"string",
+         "value":"V2 1 0"
         }],
  "renderorder":"right-down",
  "tiledversion":"1.8.0",

@@ -6,7 +6,7 @@ import           Data.Bool (bool)
 import           Data.Foldable (for_)
 import qualified Lens.Micro as L
 import           Overlude hiding (now)
-import           SDL hiding (get, Event, time)
+import           SDL hiding (delay, get, Event, time)
 import Controls (waitControls)
 import GHC.Generics (Generic)
 
@@ -67,6 +67,15 @@ setForce f (V2 x y) =
       | signum a /= signum b = 0
       | otherwise = b
 
+facing :: (Num a, Ord a) => a -> a -> Maybe Bool
+facing old new
+  | old == new = Nothing
+  | otherwise = Just $ new < old
+
+direction :: SF (V2 Double) Bool
+direction = (iPre 0 &&& arr id)
+        >>> (arr $ \(old, new) -> maybeToEvent $ facing (getX old) (getX new))
+        >>> dHold True
 
 runningState
     :: Resources
@@ -77,13 +86,14 @@ runningState rs = \(World fname p0) ->
   withRoot $ dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
     pos <- charpos f p0 -< fi
     anim    <- arr (bool Idle Run . (/= 0) . setForce f . c_arrows) -< fi_controls fi
+    dir <- direction -< pos
     t <- mkAnim rs MainCharacter -< anim
     evs <- traverse zoneHandler $ f_zones f -< pos
 
     returnA -<
       ( const $ do
           drawTiles f pos rs
-          drawSprite t (asPerCamera pos pos) 0 (pure False) rs
+          drawSprite t (asPerCamera pos pos) 0 (V2 dir False) rs
       , mapFilterE (teleporter rs $ World fname pos) $ mergeEvents evs
       )
 

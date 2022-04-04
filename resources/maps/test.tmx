@@ -4,7 +4,7 @@
   <export target="test.json" format="json"/>
  </editorsettings>
  <properties>
-  <property name="force" type="bool" value="true"/>
+  <property name="force" value="V2 1 0"/>
  </properties>
  <tileset firstgid="1" name="basic" tilewidth="16" tileheight="16" tilecount="120" columns="8">
   <image source="../tilesets/basic.png" width="128" height="240"/>

@@ -16,7 +16,6 @@ import           SDL
 import qualified SDL.Image as Image
 import           System.FilePath (dropFileName, (<.>), (</>))
 import           Text.Read (readMaybe)
-import Debug.Trace (traceM)
 
 
 pad :: Int -> Char -> String -> String
@@ -86,14 +85,19 @@ globalToLocal ts gbl
   = Just $ LocalId $ unGlobalId gbl - unGlobalId (tilesetFirstgid ts)
   | otherwise = Nothing
 
+getString :: Value -> Maybe String
+getString (String txt) = Just $ T.unpack txt
+getString Null = Just ""
+getString _ = Nothing
+
 
 -- TODO(sandy): Super partial function. Sorry. But the tiled datastructure is
 -- fucking insane.
 parseTilemap :: HasCallStack => Engine -> FieldName -> Tiledmap -> IO Field
 parseTilemap e f ti = do
   let renderer = e_renderer e
-      force_dir = maybe 0 (const (V2 1 0))
-                $ M.lookup "force"
+      force_dir = fromMaybe 0
+                $ (readMaybe <=< (getString . propertyValue) <=< M.lookup "force")
                 $ tiledmapProperties ti
 
   tilesets <-
