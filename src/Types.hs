@@ -1,8 +1,9 @@
-{-# LANGUAGE StrictData         #-}
+{-# LANGUAGE StrictData #-}
 
 module Types
   ( module Types
   , module FRP.Yampa
+  , module Debug.Trace
   , Word8
   ) where
 
@@ -17,6 +18,7 @@ import Data.Monoid (All(..))
 import Data.Semigroup (Max(..))
 import Control.Monad.Reader
 import GHC.Generics (Generic)
+import Debug.Trace (traceShowId, traceM)
 
 
 data Engine = Engine
@@ -75,8 +77,19 @@ data Field = Field
   , f_walkable :: V2 Int -> Bool
   , f_zones :: [Zone]
   , f_force :: V2 Int
+  , f_actors :: [Actor]
   }
   deriving Generic
+
+data Facing = FacingLeft | FacingRight
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data Actor = Actor
+  { a_name   :: CharName
+  , a_pos    :: V2 Double
+  , a_facing :: Facing
+  }
+  deriving (Show, Generic)
 
 data ZoneType
   = SendMessage Message
@@ -90,15 +103,16 @@ data Zone = Zone
 
 
 instance Semigroup Field where
-  Field f1 v1 p1 z1 _ <> Field f2 v2 p2 z2 _
+  Field f1 v1 p1 z1 _ a1 <> Field f2 v2 p2 z2 _ a2
     = Field (f1 <> f2)
             (coerce ((<>) @(Max (V2 Double))) v1 v2)
             (coerce ((<>) @(V2 Int -> All)) p1 p2)
             (z1 <> z2)
             0
+            (a1 <> a2)
 
 instance Monoid Field where
-  mempty = Field mempty 0 (const True) mempty 0
+  mempty = Field mempty 0 (const True) mempty 0 mempty
 
 
 

@@ -16,6 +16,7 @@ import           SDL
 import qualified SDL.Image as Image
 import           System.FilePath (dropFileName, (<.>), (</>))
 import           Text.Read (readMaybe)
+import Control.Applicative
 
 
 pad :: Int -> Char -> String -> String
@@ -113,6 +114,7 @@ parseTilemap e f ti = do
   pure $
     let res =
           flip foldMap (tiledmapLayers ti) $ \layer ->
+            let objs = join $ fmap V.toList $ maybeToList $ layerObjects layer in
             Field
               { f_data = \x y ->
                   case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
@@ -150,14 +152,22 @@ parseTilemap e f ti = do
                     -- Object layers don't obstruct walkability
                     (_, _, Just _) -> True
                     _ -> False
-              , f_zones = mapMaybe parseZone
-                        $ join
-                        $ fmap V.toList
-                        $ maybeToList
-                        $ layerObjects layer
+              , f_zones = mapMaybe parseZone objs
               , f_force = 0
+              , f_actors = mapMaybe parseActors objs
               }
     in res { f_force = force_dir }
+
+
+parseActors :: Object -> Maybe Actor
+parseActors o =
+  Actor
+    <$> readMaybe (T.unpack $ objectName o)
+    <*> pure (V2 (objectX o) (objectY o))
+    <*> (parseProperty (objectProperties o) "facing" <|> pure FacingRight)
+
+parseProperty :: Read a => Map Text Property -> Text -> Maybe a
+parseProperty props name = M.lookup name props >>= getString . propertyValue >>= readMaybe
 
 
 parseZone :: Object -> Maybe Zone

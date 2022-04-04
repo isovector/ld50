@@ -2,13 +2,13 @@
 
 module Game where
 
+import           Controls (waitControls)
 import           Data.Bool (bool)
 import           Data.Foldable (for_)
+import           GHC.Generics (Generic)
 import qualified Lens.Micro as L
 import           Overlude hiding (now)
 import           SDL hiding (delay, get, Event, time)
-import Controls (waitControls)
-import GHC.Generics (Generic)
 
 
 
@@ -39,7 +39,7 @@ data World = World
 game :: Resources -> SF FrameInfo Renderable
 game rs =
   runCompositing (error "fin") $ do
-    dialogMsg Martha "Sandy is awesome"
+    -- dialogMsg Martha "Sandy is awesome"
     runningGame rs
 
 
@@ -59,7 +59,7 @@ dialogMsg who say = liftCompositing $ do
 
 
 runningGame :: Resources -> Compositing' FrameInfo Renderable World
-runningGame rs = evolveC (World City $ V2 20 20) $ runningState rs
+runningGame rs = evolveC (World City $ V2 80 140) $ runningState rs
 
 setForce :: Field -> V2 Int -> V2 Int
 setForce f (V2 x y) =
@@ -81,6 +81,10 @@ direction = (iPre 0 &&& arr id)
         >>> (arr $ \(old, new) -> maybeToEvent $ facing (getX old) (getX new))
         >>> dHold True
 
+facingToFacing :: Facing -> V2 Bool
+facingToFacing FacingLeft = V2 True False
+facingToFacing FacingRight = pure False
+
 runningState
     :: Resources
     -> World
@@ -92,11 +96,21 @@ runningState rs = \(World fname p0) ->
     anim    <- arr (bool Idle Run . (/= 0) . setForce f . c_arrows) -< fi_controls fi
     dir <- direction -< pos
     t <- mkAnim rs MainCharacter -< anim
+
+    peeps <- traverse (mkAnim rs . a_name) (f_actors f) -< Idle
     evs <- traverse zoneHandler $ f_zones f -< pos
 
     returnA -<
       ( const $ do
           drawTiles f pos rs
+
+          for_ (zip peeps $ f_actors f) $ \(wt, actor) -> do
+            drawSprite wt
+              (asPerCamera f pos $ a_pos actor)
+              0
+              (facingToFacing $ a_facing actor)
+              rs
+
           drawSprite t (asPerCamera f pos pos) 0 (V2 dir False) rs
       , mapFilterE (teleporter rs $ World fname pos) $ mergeEvents evs
       )
