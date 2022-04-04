@@ -51,6 +51,7 @@ data Anim
 
 data FieldName
   = TestField
+  | Another
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data GameTexture
@@ -153,7 +154,8 @@ data Message
   | Restart
   | Quit
   | HitWall
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  | Goto FieldName (V2 Double)
+  deriving (Eq, Ord, Show, Read)
 
 data Switch i o a
   = Push (a -> Compositing' i o (a, Switch i o a))

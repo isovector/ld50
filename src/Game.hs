@@ -58,7 +58,7 @@ runningState
     -> V2 Double
     -> Compositing' FrameInfo Renderable (V2 Double, Switch FrameInfo Renderable (V2 Double))
 runningState rs = \p0 ->
-  let f = r_fields rs TestField in
+  let f = r_fields rs Another in
   withRoot $ dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
     pos <- charpos f p0 -< fi
     anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< fi_controls fi
@@ -79,6 +79,7 @@ teleporter
     -> Maybe (V2 Double, Switch FrameInfo Renderable (V2 Double))
 teleporter rs v HitWall = Just (v + V2 40 0, Bind $ runningState rs)
 teleporter _ v Quit = Just (v, Push $ const $ dialogMsg >> pure (v, Done v) )
+teleporter rs _ (Goto f v) = Just (v, Bind $ runningState rs)
 teleporter _ _ _ = Nothing
 
 
@@ -115,9 +116,9 @@ zoneHandler z@(Zone { z_type = SendMessage msg }) =
 
 
 field :: Resources -> Swont (Bool, FrameInfo) Renderable [Message]
-field rs = let f = r_fields rs TestField in
+field rs = let f = r_fields rs Another in
   swont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi@(FrameInfo controls _)) -> do
-  pos     <- charpos (r_fields rs TestField) (V2 40 40) -< fi
+  pos     <- charpos (r_fields rs Another) (V2 40 40) -< fi
   anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
   mc      <- mkAnim rs MainCharacter -< anim
 
