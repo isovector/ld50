@@ -138,7 +138,7 @@ output rs _ render = do
   clear renderer
   render rs
   rendererRenderTarget renderer $= Just (e_buffer e)
-  currentProgram $= Just (e_shader_program e)
+  -- currentProgram $= Just (e_shader_program e)
 
   rendererRenderTarget renderer $= Nothing
   glBindTexture $ e_buffer e
