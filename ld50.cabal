@@ -29,6 +29,7 @@ executable ld50-exe
       Controls
       Game
       Lib
+      Lighting
       Overlude
       Resources
       Shaders
@@ -97,12 +98,14 @@ executable ld50-exe
     , aeson-tiled
     , base >=4.7 && <5
     , containers
+    , deepseq
     , filepath
     , generic-lens
     , microlens
     , mtl
     , random
     , sdl2
+    , sdl2-gfx
     , sdl2-image
     , sdl2-mixer
     , simple-affine-space

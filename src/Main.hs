@@ -21,6 +21,7 @@ import System.Exit
 import System.FilePath ((</>))
 import Graphics.Rendering.OpenGL (Color4(Color4), GLfloat)
 import Shaders
+import Control.Concurrent (threadDelay)
 
 
 
@@ -145,9 +146,8 @@ output rs _ render = do
 
   pushUniforms e $ Uniforms (pure $ V4 1 0 0 0.5)
 
-
-
   glSwapWindow $ e_window e
+  threadDelay 1
   pure False
 
 

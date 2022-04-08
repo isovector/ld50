@@ -6,9 +6,11 @@ import           Data.Bool (bool)
 import           Data.Foldable (for_, asum)
 import           GHC.Generics (Generic)
 import qualified Lens.Micro as L
+import           Lighting (lighting, Triangle(..))
 import           Overlude
-import           SDL hiding (delay, get, Event, time)
-import Prelude hiding (interact)
+import           Prelude hiding (interact)
+import           SDL hiding (delay, get, Event, time, norm)
+import           SDL.Primitive (fillTriangle)
 
 
 charpos :: Field -> V2 Double -> SF FrameInfo (V2 Double)
@@ -95,6 +97,20 @@ facingToFacing FacingRight = pure False
 interactionEvent :: SF Controls (Event ())
 interactionEvent = arr c_action >>> edge
 
+corners :: Field -> [(V2 Double, V2 Double)]
+corners (f_size -> V2 w h) =
+  [ (tl, tr)
+  , (tr, br)
+  , (br, bl)
+  , (bl, tl)
+  ]
+  where
+    tl = 0
+    tr = V2 w 0
+    bl = V2 0 h
+    br = V2 w h
+
+
 
 runningState
     :: Resources
@@ -112,11 +128,13 @@ runningState rs = \(World fname p0) ->
     evs   <- traverse zoneHandler $ f_zones f -< pos
     interact <- interactionEvent -< fi_controls fi
     to_play <- soundTrigger Hit -< interact
+    bs <- arr (lighting 200 (corners f <> f_blockers f)) -< pos
 
     returnA -<
       ( const $ do
           let cam = pos
-          -- to_play rs
+
+              lights = fmap (fmap $ asPerCamera f cam) bs
 
           drawTiles f pos rs
 
@@ -128,8 +146,11 @@ runningState rs = \(World fname p0) ->
               rs
 
           drawSprite t (asPerCamera f cam pos) 0 (V2 dir False) rs
-          when (f_force f /= 0) $
-            drawDarkness (round $ getX (asPerCamera f cam pos)) rs
+
+          for_ lights $ flip drawTriangle rs
+
+          -- when (f_force f /= 0) $
+          --   drawDarkness (round $ getX (asPerCamera f cam pos)) rs
 
       , let w' = World fname pos in
         mergeEvents
@@ -146,6 +167,14 @@ runningState rs = \(World fname p0) ->
                   Nothing -> empty
           ]
       )
+
+drawTriangle :: Triangle (V2 Double) -> Renderable
+drawTriangle (fmap (fmap round) -> t) rs = do
+  let renderer = e_renderer $ r_engine rs
+  rendererDrawColor renderer $= V4 255 255 0 128
+  fillTriangle renderer (t_v1 t) (t_v2 t) (t_v3 t) $ V4 255 255 0 30
+  -- drawLines renderer $ V.fromList $ fmap (P . fmap round) [t_v1 t, t_v2 t, t_v3 t, t_v1 t]
+  -- drawPoints renderer $ V.fromList $ fmap (P . fmap round) $ [t_v2 t, t_v3 t]
 
 teleporter
     :: Resources

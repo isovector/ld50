@@ -5,6 +5,7 @@ packages:
 
 extra-deps:
 - Yampa-0.13.3
+- sdl2-gfx-0.3.0.0
 - ../aeson-tiled
 
 

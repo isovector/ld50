@@ -11,6 +11,13 @@ packages:
       sha256: 1311995e61b3cc9ccb8d685975ce6e7d485cc4bc782299dee8a834188f564a00
   original:
     hackage: Yampa-0.13.3
+- completed:
+    hackage: sdl2-gfx-0.3.0.0@sha256:b849bffb204f461d0fac63eaadc91214e0dff48a6400f24f66a7c6b9611599f1,2172
+    pantry-tree:
+      size: 834
+      sha256: 3d994ed8195bbd8939cc68986bd1f2b431dac852db329ccc0cb10cf13735066b
+  original:
+    hackage: sdl2-gfx-0.3.0.0
 snapshots:
 - completed:
     size: 586286

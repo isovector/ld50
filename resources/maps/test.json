@@ -131,7 +131,7 @@
  "orientation":"orthogonal",
  "properties":[
         {
-         "name":"force",
+         "name":"forcex",
          "type":"string",
          "value":"V2 1 0"
         }],

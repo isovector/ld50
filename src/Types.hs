@@ -1,6 +1,7 @@
 {-# LANGUAGE StrictData #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Types
   ( module Types
@@ -28,6 +29,9 @@ import Control.Applicative
 import SDL.Mixer (Chunk)
 import Graphics.Rendering.OpenGL (Program)
 import Graphics.Rendering.OpenGL.GL (UniformLocation)
+import Control.DeepSeq
+
+deriving anyclass instance NFData a => NFData (Rectangle a)
 
 
 data Engine = Engine
@@ -37,7 +41,7 @@ data Engine = Engine
   , e_shader_program :: Program
   , e_uniform_locs :: Uniforms (Const UniformLocation)
   }
-  deriving Generic
+  deriving stock Generic
 
 
 data Controls = Controls
@@ -45,7 +49,8 @@ data Controls = Controls
   , c_restart :: Bool
   , c_arrows :: V2 Int
   }
-  deriving Generic
+  deriving stock Generic
+  deriving anyclass (NFData)
 
 
 defaultControls :: Controls
@@ -55,24 +60,28 @@ data CharName
   = MainCharacter
   | Martha
   | Claptrap
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving stock (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
 
 
 data Anim
   = Idle
   | NoAnim
   | Run
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving stock (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
 
 data FieldName
   = TestField
   | Another
   | City
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving stock (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
 
 data GameTexture
   = Darkness
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
 
 
 data Resources = Resources
@@ -83,10 +92,12 @@ data Resources = Resources
   , r_textures :: GameTexture -> WrappedTexture
   , r_sounds :: Sound -> Chunk
   }
-  deriving Generic
+  deriving stock Generic
+  -- deriving anyclass (NFData)
 
 data Field = Field
   { f_data :: Int -> Int -> [WrappedTexture]
+  , f_size :: V2 Double
   , f_tilesize :: V2 Double
   , f_walkable :: V2 Int -> Bool
   , f_zones :: [Zone]
@@ -94,16 +105,19 @@ data Field = Field
   , f_actors :: [Actor]
   , f_blockers :: [(V2 Double, V2 Double)]
   }
-  deriving Generic
+  deriving stock Generic
+  deriving anyclass (NFData)
 
 data Facing = FacingLeft | FacingRight
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
 
 data Sound
   = Hit
   | MCSay
   | MarthaSay
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving stock (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+  deriving anyclass (NFData)
 
 
 data Actor = Actor
@@ -112,22 +126,26 @@ data Actor = Actor
   , a_facing      :: Facing
   , a_interaction :: Maybe ActorInteraction
   }
-  deriving (Show, Generic)
+  deriving stock (Show, Generic)
+  deriving anyclass NFData
 
 data ZoneType
   = SendMessage WorldInteraction
-  deriving (Eq, Ord, Show, Read)
+  deriving stock (Eq, Ord, Show, Read, Generic)
+  deriving anyclass NFData
 
 data Zone = Zone
   { z_type :: ZoneType
   , z_rect :: Rectangle Double
   }
-  deriving (Generic, Show)
+  deriving stock (Generic, Show)
+  deriving anyclass NFData
 
 
 instance Semigroup Field where
-  Field f1 v1 p1 z1 _ a1 b1 <> Field f2 v2 p2 z2 _ a2 b2
+  Field f1 s1 v1 p1 z1 _ a1 b1 <> Field f2 s2 v2 p2 z2 _ a2 b2
     = Field (f1 <> f2)
+            (coerce ((<>) @(Max (V2 Double))) s1 s2)
             (coerce ((<>) @(Max (V2 Double))) v1 v2)
             (coerce ((<>) @(V2 Int -> All)) p1 p2)
             (z1 <> z2)
@@ -136,7 +154,7 @@ instance Semigroup Field where
             (b1 <> b2)
 
 instance Monoid Field where
-  mempty = Field mempty 0 (const True) mempty 0 mempty mempty
+  mempty = Field mempty 0 0 (const True) mempty 0 mempty mempty
 
 
 
@@ -144,7 +162,8 @@ data FrameInfo = FrameInfo
   { fi_controls :: Controls
   , fi_dt :: Double
   }
-  deriving Generic
+  deriving stock Generic
+  deriving anyclass NFData
 
 type Renderable = Resources -> IO ()
 
@@ -155,7 +174,10 @@ data WrappedTexture = WrappedTexture
   , wt_size       :: V2 CInt
   , wt_origin     :: V2 CInt
   }
-  deriving Generic
+  deriving stock Generic
+
+instance NFData WrappedTexture where
+  rnf (WrappedTexture !tex m_rec v2 v2') = m_rec `seq` v2 `seq` v2' `seq` ()
 
 
 --------------------------------------------------------------------------------
@@ -166,7 +188,8 @@ data WrappedTexture = WrappedTexture
 newtype Embedding a b d e = Embedding
   { getEmbedding :: SF a b -> SF d e
   }
-  deriving (Functor)
+  deriving stock (Functor, Generic)
+  deriving anyclass NFData
 
 type Embedding' i o = Embedding i o i o
 
@@ -185,22 +208,27 @@ data FSM i o = FSM
 -- |
 newtype Compositing d e i o a = Compositing
   { getCompositing :: ReaderT (FSM d e) (Swont i o) a
-  } deriving (Functor, Applicative, Monad, MonadReader (FSM d e))
+  }
+  deriving newtype (Functor, Applicative, Monad, MonadReader (FSM d e))
+  deriving stock Generic
 
 type Compositing' i o = Compositing i o i o
 
 
 data Message
   = Interact
-  deriving (Eq, Ord, Show, Read)
+  deriving stock (Eq, Ord, Show, Read, Generic)
+  deriving anyclass NFData
 
 data WorldInteraction
   = Goto FieldName (V2 Double)
-  deriving (Eq, Ord, Show, Read)
+  deriving stock (Eq, Ord, Show, Read, Generic)
+  deriving anyclass NFData
 
 data ActorInteraction
   = PortalWarning
-  deriving (Eq, Ord, Show, Read)
+  deriving stock (Eq, Ord, Show, Read, Generic)
+  deriving anyclass NFData
 
 data Uniforms f = Uniforms
   { u_mood_color :: f (V4 Float)

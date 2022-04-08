@@ -40,6 +40,8 @@ dependencies:
 - generic-lens
 - microlens
 - OpenGL
+- deepseq
+- sdl2-gfx
 
 ghc-options:
 - -Wall

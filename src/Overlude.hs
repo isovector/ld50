@@ -3,6 +3,7 @@ module Overlude
   , module Control.Monad
   , module Types
   , module Data.Point2
+  , V2(..)
   , T.Text
   , ask
   , asks
@@ -12,13 +13,13 @@ import           Control.Monad
 import           Control.Monad.Cont
 import           Control.Monad.Reader
 import           Data.Foldable (for_, traverse_)
+import           Data.List (genericLength)
 import           Data.Point2
 import qualified Data.Text as T
 import           Foreign.C
 import           SDL hiding (time, Event)
+import           SDL.Mixer
 import           Types hiding (next)
-import Data.List (genericLength)
-import SDL.Mixer
 
 bgColor :: V4 Word8 -> Renderable
 bgColor col rs = do

@@ -17,6 +17,7 @@ import qualified SDL.Image as Image
 import           System.FilePath (dropFileName, (<.>), (</>))
 import           Text.Read (readMaybe)
 import qualified SDL.Mixer as Mixer
+import Control.DeepSeq (force)
 
 
 pad :: Int -> Char -> String -> String
@@ -117,7 +118,7 @@ parseTilemap e f ti = do
                   $ dropFileName (fieldPath f) <> tilesetImage ts
 
   let (ts, tx) = tilesets V.! 0
-      size = fmap fromIntegral
+      tilesize = fmap fromIntegral
           $ V2 (tilesetTilewidth ts) (tilesetTileheight ts)
 
   pure $
@@ -138,14 +139,15 @@ parseTilemap e f ti = do
                           pure $ WrappedTexture
                             { getTexture = tx
                             , wt_sourceRect = Just
-                                            $ Rectangle (P $ (* size) $ fmap fromIntegral $ V2 ix iy)
-                                            $ size
-                            , wt_size = size
+                                            $ Rectangle (P $ (* tilesize) $ fmap fromIntegral $ V2 ix iy)
+                                            $ tilesize
+                            , wt_size = tilesize
                             , wt_origin = 0
                             }
                         Nothing -> mempty
                     _ -> mempty
-              , f_tilesize = fmap fromIntegral size
+              , f_size = V2 (layerWidth layer) (layerHeight layer) * fmap fromIntegral tilesize
+              , f_tilesize = fmap fromIntegral tilesize
               , f_walkable = \(V2 x y) ->
                   case ( within x 0 (tiledmapWidth ti) && within y 0 (tiledmapHeight ti)
                       , layerData layer
@@ -172,7 +174,7 @@ parseBlockers :: Object -> [(V2 Double, V2 Double)]
 parseBlockers o = case objectPolyline o of
   Nothing -> mempty
   Just vec ->
-    let ps = fmap (uncurry V2) $ V.toList vec
+    let ps = fmap (V2 (objectX o) (objectY o) +) $ fmap (uncurry V2) $ V.toList vec
      in zip ps $ tail ps
 
 
@@ -215,7 +217,7 @@ loadResources e = do
       texture <- Image.loadTexture renderer fp
       pure (toEnum @Char code, texture)
 
-  chars <- fmap (M.fromList . join) $
+  chars <- fmap (force . M.fromList . join) $
     for [minBound @CharName .. maxBound] $ \char ->
       for [minBound @Anim .. maxBound] $ \anim ->  do
         frames <- for [0 .. frameCounts char anim - 1] $ \i -> do
@@ -223,7 +225,7 @@ loadResources e = do
           fmap setGroundOrigin . wrapTexture =<< Image.loadTexture renderer fp
         pure ((char, anim), frames)
 
-  fields <- fmap M.fromList $
+  fields <- fmap (force . M.fromList) $
     for [minBound @FieldName .. maxBound] $ \fn -> do
       let fp = fieldPath fn
       loadTiledmap fp >>= \case
@@ -235,7 +237,7 @@ loadResources e = do
       let fp = texturePath tx
       fmap (tx, ) $ wrapTexture =<< Image.loadTexture renderer fp
 
-  sounds <- fmap M.fromList $
+  sounds <- fmap (M.fromList) $
     for [minBound @Sound .. maxBound] $ \tx-> do
       let fp = soundPath tx
       fmap (tx, ) $ Mixer.load fp
