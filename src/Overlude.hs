@@ -205,9 +205,13 @@ evolveC s0 f = do
 
 pushDialog :: Compositing' i Renderable b -> Compositing' i Renderable a -> Compositing' i Renderable b
 pushDialog under above = do
-  fsm <- ask
-  _ <- push (*>.) (unCompositing (localFSM id fsm) (error "sf ended during dialog") under) above
+  void $ underDialog under above
   under
+
+underDialog :: Compositing' i Renderable b -> Compositing' i Renderable a -> Compositing' i Renderable a
+underDialog under above = do
+  fsm <- ask
+  push (*>.) (unCompositing (localFSM id fsm) (error "sf ended during dialog") under) above
 
 
 ------------------------------------------------------------------------------
