@@ -125,7 +125,8 @@ runningState rs = \(World fname p0) ->
     peeps <- traverse (mkAnim rs . a_name) (f_actors f) -< Idle
     evs   <- traverse zoneHandler $ f_zones f -< pos
     interact <- interactionEvent -< fi_controls fi
-    bs <- arr (lighting 200 (corners f <> f_blockers f)) -< pos
+    bs <- arr (\p@(V2 x _) -> lighting 200 ((V2 (x + 4) 0, V2 (x + 4) $ getY $ f_size f)
+                                            : corners f <> f_blockers f) p) -< pos
 
     returnA -<
       ( const $ do

@@ -54,7 +54,7 @@ linesIntersection a@(start, end) b = onLine $ lineIntersect' a b
 
 checkOkIntersect :: (Double, Double) -> Bool
 checkOkIntersect (x, y) =
-  x >= 0 && x <= 1 && y >= 0 && y <= 1
+  x > 0 && x < 1 && y > 0 && y < 1
 
 
 ------------------------------------------------------------------------------
