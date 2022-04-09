@@ -41,7 +41,9 @@ dependencies:
 - microlens
 - OpenGL
 - deepseq
-- sdl2-gfx
+- cairo-canvas
+- sdl2-cairo
+- cairo
 
 ghc-options:
 - -Wall

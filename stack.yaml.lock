@@ -19,12 +19,33 @@ packages:
   original:
     hackage: sdl2-2.5.3.2
 - completed:
-    hackage: sdl2-gfx-0.3.0.0@sha256:b849bffb204f461d0fac63eaadc91214e0dff48a6400f24f66a7c6b9611599f1,2172
+    hackage: cairo-canvas-0.1.0.0@sha256:c9d3e5e9aabc1b261c9ce97e9ea53b8a8d9b743ca0e9b0502521569ed98fa40a,1721
     pantry-tree:
-      size: 834
-      sha256: 3d994ed8195bbd8939cc68986bd1f2b431dac852db329ccc0cb10cf13735066b
+      size: 292
+      sha256: 65f593d28fb5cb7597694bbcaf1e48de4092024e42dfe1b25fda41fc9a22b9ee
   original:
-    hackage: sdl2-gfx-0.3.0.0
+    hackage: cairo-canvas-0.1.0.0@sha256:c9d3e5e9aabc1b261c9ce97e9ea53b8a8d9b743ca0e9b0502521569ed98fa40a,1721
+- completed:
+    hackage: sdl2-cairo-0.2@sha256:f4136fe6ffa5f625725ef43391178bfb59c40eeaf985d78fba16e594d6f9dc08,1134
+    pantry-tree:
+      size: 211
+      sha256: 1386db4b3a942d7ca4c2215e2662537d1312ebfa9087b79f5430dca94547af39
+  original:
+    hackage: sdl2-cairo-0.2@sha256:f4136fe6ffa5f625725ef43391178bfb59c40eeaf985d78fba16e594d6f9dc08,1134
+- completed:
+    hackage: cairo-0.13.8.2@sha256:ef1709c3c4d2c6d68a9a51d9f220dccc0745f6468d2d0868c15a7ecdf8f325a1,4078
+    pantry-tree:
+      size: 2830
+      sha256: d6a9b3a15bc2e7b53fda331279cfdbc299fbf0c4be2ee8c1b6b79b924b6fdeb4
+  original:
+    hackage: cairo-0.13.8.2@sha256:ef1709c3c4d2c6d68a9a51d9f220dccc0745f6468d2d0868c15a7ecdf8f325a1,4078
+- completed:
+    hackage: gtk2hs-buildtools-0.13.8.3@sha256:207229eee7abff12aba2740b32131522086275e46f2e72a0f5bbc3cb781e9d4d,5304
+    pantry-tree:
+      size: 3588
+      sha256: 1f93c6dbf2573503c48019fdf9f4662dcac494beaecccaea1873ec901eb2152f
+  original:
+    hackage: gtk2hs-buildtools-0.13.8.3@sha256:207229eee7abff12aba2740b32131522086275e46f2e72a0f5bbc3cb781e9d4d,5304
 snapshots:
 - completed:
     size: 586286

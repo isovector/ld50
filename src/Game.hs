@@ -2,17 +2,18 @@
 
 module Game where
 
+import           Data.Bifunctor (bimap)
 import           Data.Bool (bool)
 import           Data.Foldable (for_, asum)
 import           GHC.Generics (Generic)
-import           Graphics.Rendering.OpenGL (currentProgram)
+import           Graphics.Rendering.Cairo.Canvas hiding (corners)
 import qualified Lens.Micro as L
 import           Lighting (lighting, Triangle(..))
 import           Overlude
 import           Prelude hiding (interact)
 import           SDL (get)
 import           SDL hiding (delay, get, Event, time, norm)
-import           SDL.Primitive (fillTriangle)
+import           SDL.Cairo (withCairoTexture')
 
 
 charpos :: Field -> V2 Double -> SF FrameInfo (V2 Double)
@@ -115,7 +116,7 @@ runningState
     -> World
     -> Compositing' FrameInfo Renderable (World, Switch FrameInfo Renderable World)
 runningState rs = \(World fname p0) ->
-  let f = r_fields rs fname in
+  let f = r_fields rs fname  in
   withRoot $ dswont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi) -> do
     pos  <- charpos f p0 -< fi
     anim <- arr (bool Idle Run . (/= 0) . setForce f . c_arrows) -< fi_controls fi
@@ -125,8 +126,14 @@ runningState rs = \(World fname p0) ->
     peeps <- traverse (mkAnim rs . a_name) (f_actors f) -< Idle
     evs   <- traverse zoneHandler $ f_zones f -< pos
     interact <- interactionEvent -< fi_controls fi
-    bs <- arr (\p@(V2 x _) -> lighting 200 ((V2 (x + 4) 0, V2 (x + 4) $ getY $ f_size f)
-                                            : corners f <> f_blockers f) p) -< pos
+
+    r <- arr (\p ->
+                let (tl, br) = getScreenBounds f p
+                 in Rectangle (P tl - 50) (br - tl + 100)
+             ) -< pos
+    bs <- arr (\(p@(V2 x _), r) -> lighting 200 ( -- (V2 (x + 4) 0, V2 (x + 4) $ getY $ f_size f) :
+                                             corners f <>
+                                             filter (relevantBlockers r) (f_blockers f)) p) -< (pos, r)
 
     returnA -<
       ( const $ do
@@ -147,11 +154,11 @@ runningState rs = \(World fname p0) ->
 
           let e = r_engine rs
               renderer = e_renderer e
-          withRendererTarget renderer (Just $ e_shadows e) $ do
-            bgColor (V4 255 255 255 255) rs
-            withBlendMode renderer BlendMod $ do
-              for_ lights $ flip drawTriangle rs
-          currentProgram $= Just (e_shader_program e)
+          withCairoTexture' (e_shadows e) $ runCanvas $ do
+            noStroke
+            background $  V4 255 255 255 255
+            for_ lights drawTriangle
+          -- currentProgram $= Just (e_shader_program e)
           copy renderer (e_shadows e) Nothing (Just $ Rectangle (P 0) screenSize)
 
           -- when (f_force f /= 0) $
@@ -173,6 +180,10 @@ runningState rs = \(World fname p0) ->
           ]
       )
 
+relevantBlockers :: Rectangle Double -> (V2 Double, V2 Double) -> Bool
+relevantBlockers r (p1, p2) =
+  any (rectContains r) [ p1, p2 ]
+
 withRendererTarget :: Renderer -> Maybe Texture -> IO a -> IO a
 withRendererTarget renderer rt' m = do
   rt <- get $ rendererRenderTarget renderer
@@ -185,11 +196,10 @@ withBlendMode renderer bm' m = do
   rendererDrawBlendMode renderer $= bm'
   m <* (rendererDrawBlendMode renderer $= bm)
 
-drawTriangle :: Triangle (V2 Double) -> Renderable
-drawTriangle (fmap (fmap round) -> t) rs = do
-  let e = r_engine rs
-      renderer = e_renderer e
-  fillTriangle renderer (t_v1 t) (t_v2 t) (t_v3 t) $ V4 0 0 0 255
+drawTriangle :: Triangle (V2 Double) -> Canvas ()
+drawTriangle (t) = do
+  fill $ V4 0 0 0 255
+  triangle (t_v1 t) (t_v2 t) (t_v3 t)
 
 
 teleporter
@@ -253,45 +263,21 @@ zoneHandler z@(Zone { z_type = SendMessage msg }) =
     returnA -< ev
 
 
--- field :: Resources -> Swont (Bool, FrameInfo) Renderable [Message]
--- field rs = let f = r_fields rs Another in
---   swont $ proc (root, L.over #fi_controls (bool (const defaultControls) id root) -> fi@(FrameInfo controls _)) -> do
---   pos     <- charpos (r_fields rs Another) (V2 40 40) -< fi
---   anim    <- arr (bool Idle Run . (/= 0) . getX . clampedArrows) -< controls
---   mc      <- mkAnim rs MainCharacter -< anim
+getScreenBounds :: Field -> V2 Double -> (V2 Double, V2 Double)
+getScreenBounds f cam =
+  ( invertCamera f cam 0
+  , invertCamera f cam screen
+  )
 
---   clap    <- mkAnim rs Claptrap      -< Idle
---   martha  <- mkAnim rs Martha        -< Idle
-
---   msgs <- traverse zoneHandler (f_zones f) -< pos
-
---   returnA -< (, sequenceA msgs) $ \rs' -> do
---     bgColor (V4 255 0 0 255) rs'
---     let cam = pos
-
---     drawTiles f cam rs'
-
---     let stretch = bool 0 (V2 2 0) $ getX (c_arrows controls) < 0
---     drawSpriteStretched
---       mc
---       (asPerCamera cam pos)
---       0
---       (pure False)
---       stretch
---       rs'
-
---     drawSprite clap (asPerCamera cam $ V2 60 40) 0 (pure True) rs'
-
---     let martha_pos = asPerCamera cam $ V2 80 80
---     drawText 4 white "help!" (martha_pos - V2 0 30) rs
---     drawSprite martha (martha_pos) 0 (V2 True False) rs'
+getScreenTileBounds :: Field -> V2 Double -> (V2 Int, V2 Int)
+getScreenTileBounds f =
+  bimap (worldToTile f) (worldToTile f) . getScreenBounds f
 
 
 drawTiles :: Field -> V2 Double -> Renderable
 drawTiles f cam rs = do
   let tiles = f_data f
-      topleft = worldToTile f $ invertCamera f cam 0
-      botright = worldToTile f $ invertCamera f cam screen
+      (topleft, botright) = getScreenTileBounds f cam
 
   for_ [getY topleft .. getY botright] $ \y ->
     for_ [getX topleft .. getX botright] $ \x ->

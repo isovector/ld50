@@ -170,11 +170,14 @@ parseTilemap e f ti = do
               }
     in res { f_force = force_dir }
 
+close :: [a] -> [a]
+close as = take (length as + 1) $ cycle as
+
 parseBlockers :: Object -> [(V2 Double, V2 Double)]
-parseBlockers o = case objectPolyline o of
+parseBlockers o = case fmap V.toList (objectPolyline o) <> fmap (close . V.toList) (objectPolygon o) of
   Nothing -> mempty
   Just vec ->
-    let ps = fmap (V2 (objectX o) (objectY o) +) $ fmap (uncurry V2) $ V.toList vec
+    let ps = fmap (V2 (objectX o) (objectY o) +) $ fmap (uncurry V2) $ vec
      in zip ps $ tail ps
 
 

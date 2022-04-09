@@ -6,7 +6,10 @@ packages:
 extra-deps:
 - Yampa-0.13.3
 - sdl2-2.5.3.2
-- sdl2-gfx-0.3.0.0
 - ../aeson-tiled
+- cairo-canvas-0.1.0.0@sha256:c9d3e5e9aabc1b261c9ce97e9ea53b8a8d9b743ca0e9b0502521569ed98fa40a,1721
+- sdl2-cairo-0.2@sha256:f4136fe6ffa5f625725ef43391178bfb59c40eeaf985d78fba16e594d6f9dc08,1134
+- cairo-0.13.8.2@sha256:ef1709c3c4d2c6d68a9a51d9f220dccc0745f6468d2d0868c15a7ecdf8f325a1,4078
+- gtk2hs-buildtools-0.13.8.3@sha256:207229eee7abff12aba2740b32131522086275e46f2e72a0f5bbc3cb781e9d4d,5304
 
 

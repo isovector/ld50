@@ -10,7 +10,6 @@ import Data.IORef
 import Data.String
 import Data.Time.Clock.System
 import FRP.Yampa
-import Foreign.C.Types
 import Game (game)
 import Graphics.Rendering.OpenGL.GL.Shaders
 import Overlude
@@ -19,13 +18,13 @@ import SDL hiding (copy, Stereo)
 import SDL.Mixer hiding (quit)
 import System.Exit
 import System.FilePath ((</>))
-import Graphics.Rendering.OpenGL (Color4(Color4), GLfloat)
 import Shaders
 import Control.Concurrent (threadDelay)
 import SDL.Raw.Video (composeCustomBlendMode, setTextureBlendMode)
 import SDL.Raw.Enum
 import qualified SDL.Raw.Types
 import Unsafe.Coerce (unsafeCoerce)
+import SDL.Cairo (createCairoTexture)
 
 
 makeShader :: ShaderType -> FilePath -> IO Shader
@@ -69,7 +68,7 @@ main = do
       1024
 
   buffer <- createTexture renderer RGB888 TextureAccessTarget screenSize
-  shadows <- createTexture renderer RGBA8888 TextureAccessTarget screenSize
+  shadows <- createCairoTexture renderer screenSize
   bm <- composeCustomBlendMode
           SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR
           SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR
