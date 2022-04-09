@@ -5,10 +5,12 @@ module Game where
 import           Data.Bool (bool)
 import           Data.Foldable (for_, asum)
 import           GHC.Generics (Generic)
+import           Graphics.Rendering.OpenGL (currentProgram)
 import qualified Lens.Micro as L
 import           Lighting (lighting, Triangle(..))
 import           Overlude
 import           Prelude hiding (interact)
+import           SDL (get)
 import           SDL hiding (delay, get, Event, time, norm)
 import           SDL.Primitive (fillTriangle)
 
@@ -60,11 +62,7 @@ dialogMsg who say = liftCompositing $ do
       )
 
 momentary :: (Resources -> IO ()) -> Swont i (Resources -> IO ()) ()
-momentary what = do
-  -- TODO(sandy): not sure why this is necessary, but IO actions dont seem to
-  -- happen otherwise
-  swont $ after 0.001 () >>> (constant (const $ pure ()) &&& arr id)
-  dswont $ constant what &&& now ()
+momentary what = dswont $ constant what &&& now ()
 
 
 runningGame :: Resources -> Compositing' FrameInfo Renderable World
@@ -127,7 +125,6 @@ runningState rs = \(World fname p0) ->
     peeps <- traverse (mkAnim rs . a_name) (f_actors f) -< Idle
     evs   <- traverse zoneHandler $ f_zones f -< pos
     interact <- interactionEvent -< fi_controls fi
-    to_play <- soundTrigger Hit -< interact
     bs <- arr (lighting 200 (corners f <> f_blockers f)) -< pos
 
     returnA -<
@@ -147,7 +144,14 @@ runningState rs = \(World fname p0) ->
 
           drawSprite t (asPerCamera f cam pos) 0 (V2 dir False) rs
 
-          for_ lights $ flip drawTriangle rs
+          let e = r_engine rs
+              renderer = e_renderer e
+          withRendererTarget renderer (Just $ e_shadows e) $ do
+            bgColor (V4 255 255 255 255) rs
+            withBlendMode renderer BlendMod $ do
+              for_ lights $ flip drawTriangle rs
+          currentProgram $= Just (e_shader_program e)
+          copy renderer (e_shadows e) Nothing (Just $ Rectangle (P 0) screenSize)
 
           -- when (f_force f /= 0) $
           --   drawDarkness (round $ getX (asPerCamera f cam pos)) rs
@@ -168,13 +172,24 @@ runningState rs = \(World fname p0) ->
           ]
       )
 
+withRendererTarget :: Renderer -> Maybe Texture -> IO a -> IO a
+withRendererTarget renderer rt' m = do
+  rt <- get $ rendererRenderTarget renderer
+  rendererRenderTarget renderer $= rt'
+  m <* (rendererRenderTarget renderer $= rt)
+
+withBlendMode :: Renderer -> BlendMode -> IO a -> IO a
+withBlendMode renderer bm' m = do
+  bm <- get $ rendererDrawBlendMode renderer
+  rendererDrawBlendMode renderer $= bm'
+  m <* (rendererDrawBlendMode renderer $= bm)
+
 drawTriangle :: Triangle (V2 Double) -> Renderable
 drawTriangle (fmap (fmap round) -> t) rs = do
-  let renderer = e_renderer $ r_engine rs
-  rendererDrawColor renderer $= V4 255 255 0 128
-  fillTriangle renderer (t_v1 t) (t_v2 t) (t_v3 t) $ V4 255 255 0 30
-  -- drawLines renderer $ V.fromList $ fmap (P . fmap round) [t_v1 t, t_v2 t, t_v3 t, t_v1 t]
-  -- drawPoints renderer $ V.fromList $ fmap (P . fmap round) $ [t_v2 t, t_v3 t]
+  let e = r_engine rs
+      renderer = e_renderer e
+  fillTriangle renderer (t_v1 t) (t_v2 t) (t_v3 t) $ V4 0 0 0 255
+
 
 teleporter
     :: Resources

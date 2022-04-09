@@ -21,6 +21,16 @@ import           SDL hiding (time, Event)
 import           SDL.Mixer
 import           Types hiding (next)
 
+screenScale :: V2 CFloat
+screenScale = V2 2 2
+
+physicalScreen :: Num a => V2 a
+physicalScreen = V2 160 144
+
+screenSize :: V2 CInt
+screenSize = fmap round $ (*) <$> screenScale <*> physicalScreen
+
+
 bgColor :: V4 Word8 -> Renderable
 bgColor col rs = do
   let renderer = e_renderer $ r_engine rs

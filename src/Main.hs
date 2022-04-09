@@ -22,17 +22,11 @@ import System.FilePath ((</>))
 import Graphics.Rendering.OpenGL (Color4(Color4), GLfloat)
 import Shaders
 import Control.Concurrent (threadDelay)
+import SDL.Raw.Video (composeCustomBlendMode, setTextureBlendMode)
+import SDL.Raw.Enum
+import qualified SDL.Raw.Types
+import Unsafe.Coerce (unsafeCoerce)
 
-
-
-screenScale :: V2 CFloat
-screenScale = V2 2 2
-
-physicalScreen :: Num a => V2 a
-physicalScreen = V2 160 144
-
-screenSize :: V2 CInt
-screenSize = fmap round $ (*) <$> screenScale <*> physicalScreen
 
 makeShader :: ShaderType -> FilePath -> IO Shader
 makeShader ty fp = do
@@ -75,6 +69,16 @@ main = do
       1024
 
   buffer <- createTexture renderer RGB888 TextureAccessTarget screenSize
+  shadows <- createTexture renderer RGBA8888 TextureAccessTarget screenSize
+  bm <- composeCustomBlendMode
+          SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR
+          SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR
+          -- SDL_BLENDFACTOR_DST_COLOR
+          SDL_BLENDOPERATION_ADD
+          SDL_BLENDFACTOR_SRC_ALPHA
+          SDL_BLENDFACTOR_SRC_ALPHA
+          SDL_BLENDOPERATION_ADD
+  void $ setTextureBlendMode (getRawTexture shadows) bm
 
   program <- createProgram
   attachShader program =<< makeShader VertexShader   "std.vertex"
@@ -91,6 +95,7 @@ main = do
         { e_renderer = renderer
         , e_window = window
         , e_buffer = buffer
+        , e_shadows = shadows
         , e_shader_program = program
         , e_uniform_locs = us
         }
@@ -106,6 +111,10 @@ main = do
     (output rs)
     (game rs)
   quit
+
+
+getRawTexture :: Texture -> SDL.Raw.Types.Texture
+getRawTexture = unsafeCoerce
 
 
 

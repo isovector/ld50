@@ -38,6 +38,7 @@ data Engine = Engine
   { e_renderer :: Renderer
   , e_window :: Window
   , e_buffer :: Texture
+  , e_shadows :: Texture
   , e_shader_program :: Program
   , e_uniform_locs :: Uniforms (Const UniformLocation)
   }
