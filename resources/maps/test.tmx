@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.8" tiledversion="1.8.0" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="19">
+<map version="1.8" tiledversion="1.8.0" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="7" nextobjectid="41">
  <editorsettings>
   <export target="test.json" format="json"/>
  </editorsettings>
@@ -721,14 +721,36 @@
   <object id="2" type="SendMessage HitWall" x="112" y="48" width="16" height="48"/>
   <object id="3" type="SendMessage Quit" x="160" y="160" width="224" height="16"/>
   <object id="5" type="SendMessage (Goto Another (V2 40 40))" x="128" y="0" width="16" height="48"/>
-  <object id="6" x="136" y="52">
+ </objectgroup>
+ <objectgroup color="#000000" id="5" name="sight blockers">
+  <object id="31" x="136" y="52">
    <polygon points="-4,0 -4,40 4,40 4,0"/>
   </object>
-  <object id="7" x="392" y="72">
+  <object id="32" x="392" y="72">
    <polygon points="4,44 4,92 108,92 108,-60 4,-60 4,4 -4,4 -4,-68 116,-68 116,100 -4,100 -4,44"/>
   </object>
-  <object id="18" x="508" y="84">
+  <object id="33" x="508" y="84">
    <polyline points="0,0 16,0 16,24 0,24"/>
+  </object>
+ </objectgroup>
+ <objectgroup color="#ffff00" id="6" name="lights">
+  <object id="35" type="Light" x="192" y="64" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="36" type="Light" x="240" y="112" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="37" type="Light" x="256" y="48" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="38" type="Light" x="288" y="96" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="39" type="Light" x="336" y="64" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="40" type="Light" x="320" y="160" width="16" height="16">
+   <ellipse/>
   </object>
  </objectgroup>
 </map>

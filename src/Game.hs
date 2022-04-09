@@ -150,8 +150,6 @@ runningState rs = \(World fname p0) ->
               (facingToFacing $ a_facing actor)
               rs
 
-          drawSprite t (asPerCamera f cam pos) 0 (V2 dir False) rs
-
           let e = r_engine rs
               renderer = e_renderer e
           withCairoTexture' (e_shadows e) $ runCanvas $ do
@@ -160,6 +158,8 @@ runningState rs = \(World fname p0) ->
             for_ lights drawTriangle
           -- currentProgram $= Just (e_shader_program e)
           copy renderer (e_shadows e) Nothing (Just $ Rectangle (P 0) screenSize)
+
+          drawSprite t (asPerCamera f cam pos) 0 (V2 dir False) rs
 
           -- when (f_force f /= 0) $
           --   drawDarkness (round $ getX (asPerCamera f cam pos)) rs

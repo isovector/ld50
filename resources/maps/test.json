@@ -63,10 +63,22 @@
                  "width":16,
                  "x":128,
                  "y":0
-                }, 
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "color":"#000000",
+         "draworder":"topdown",
+         "id":5,
+         "name":"sight blockers",
+         "objects":[
                 {
                  "height":0,
-                 "id":6,
+                 "id":31,
                  "name":"",
                  "polygon":[
                         {
@@ -94,7 +106,7 @@
                 }, 
                 {
                  "height":0,
-                 "id":7,
+                 "id":32,
                  "name":"",
                  "polygon":[
                         {
@@ -154,7 +166,7 @@
                 }, 
                 {
                  "height":0,
-                 "id":18,
+                 "id":33,
                  "name":"",
                  "polyline":[
                         {
@@ -185,9 +197,93 @@
          "visible":true,
          "x":0,
          "y":0
+        }, 
+        {
+         "color":"#ffff00",
+         "draworder":"topdown",
+         "id":6,
+         "name":"lights",
+         "objects":[
+                {
+                 "ellipse":true,
+                 "height":16,
+                 "id":35,
+                 "name":"",
+                 "rotation":0,
+                 "type":"Light",
+                 "visible":true,
+                 "width":16,
+                 "x":192,
+                 "y":64
+                }, 
+                {
+                 "ellipse":true,
+                 "height":16,
+                 "id":36,
+                 "name":"",
+                 "rotation":0,
+                 "type":"Light",
+                 "visible":true,
+                 "width":16,
+                 "x":240,
+                 "y":112
+                }, 
+                {
+                 "ellipse":true,
+                 "height":16,
+                 "id":37,
+                 "name":"",
+                 "rotation":0,
+                 "type":"Light",
+                 "visible":true,
+                 "width":16,
+                 "x":256,
+                 "y":48
+                }, 
+                {
+                 "ellipse":true,
+                 "height":16,
+                 "id":38,
+                 "name":"",
+                 "rotation":0,
+                 "type":"Light",
+                 "visible":true,
+                 "width":16,
+                 "x":288,
+                 "y":96
+                }, 
+                {
+                 "ellipse":true,
+                 "height":16,
+                 "id":39,
+                 "name":"",
+                 "rotation":0,
+                 "type":"Light",
+                 "visible":true,
+                 "width":16,
+                 "x":336,
+                 "y":64
+                }, 
+                {
+                 "ellipse":true,
+                 "height":16,
+                 "id":40,
+                 "name":"",
+                 "rotation":0,
+                 "type":"Light",
+                 "visible":true,
+                 "width":16,
+                 "x":320,
+                 "y":160
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
         }],
- "nextlayerid":5,
- "nextobjectid":19,
+ "nextlayerid":7,
+ "nextobjectid":41,
  "orientation":"orthogonal",
  "properties":[
         {
